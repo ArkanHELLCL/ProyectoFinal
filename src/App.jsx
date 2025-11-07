@@ -101,12 +101,13 @@ function App() {
     return filtrados
   }
 
+  /*
   // Función para obtener el pacto de una lista desde los partidos
   const getPactoDelista = (codigoLista) => {
     // Buscar en los partidos acumulados uno que coincida con el código de la lista
     const partido = partidosAcumulados.find(p => p.codigo === codigoLista)
     return partido ? partido.pacto : null
-  }
+  } */
 
   // Función para obtener votos acumulados por partido del distrito seleccionado
   const getPartidosDistrito = () => {
