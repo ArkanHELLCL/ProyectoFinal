@@ -15,9 +15,60 @@ const PACTO_NOMBRES = {
   K: "Cambio por Chile (PSC, PNL)",
 };
 
+const PARTIDO_NOMBRES = {
+  // Pacto A
+  PEV: "Partido Ecologista Verde",
+  
+  // Pacto B
+  FRVS: "Federación Regionalista Verde Social",
+  AH: "Acción Humanista",
+  
+  // Pacto C - Unidad por Chile
+  FA: "Frente Amplio",
+  PS: "Partido Socialista",
+  PC: "Partido Comunista",
+  DC: "Democracia Cristiana",
+  PPD: "Partido Por la Democracia",
+  PL: "Partido Liberal",
+  PR: "Partido Radical",
+  
+  // Pacto D
+  PH: "Partido Humanista",
+  
+  // Pacto E
+  AMR: "Amarillos por Chile",
+  
+  // Pacto F
+  PTR: "Partido de Trabajadores Revolucionarios",
+  
+  // Pacto G
+  AVP: "Alianza Verde Popular",
+  
+  // Pacto H
+  POP: "Partido Popular",
+  
+  // Pacto I
+  PDG: "Partido de la Gente",
+  
+  // Pacto J - Chile Grande y Unido
+  UDI: "Unión Demócrata Independiente",
+  RN: "Renovación Nacional",
+  EVOP: "Evópoli",
+  DEM: "Demócratas",
+  
+  // Pacto K - Cambio por Chile
+  PSC: "Partido Social Cristiano",
+  PNL: "Partido Nacional Libertario",
+  REP: "Partido Republicano",
+  
+  // Independientes
+  IND: "Independiente",
+};
+
 function App() {
   const [candidatos, setCandidatos] = useState([])
   const [distritos, setDistritos] = useState([])
+  const [escanos, setEscanos] = useState([])
   const [selectedDistrito, setSelectedDistrito] = useState('')
   const [mostrarSoloConVotos, setMostrarSoloConVotos] = useState(true)
   const [votosAcumulados, setVotosAcumulados] = useState([])
@@ -26,28 +77,28 @@ function App() {
   const [loadingVotos, setLoadingVotos] = useState(false)
   const [error, setError] = useState(null)
 
-  // Función para normalizar el distrito ID
-  const normalizarDistritoId = (zona) => {
-    if (zona && zona.startsWith('60')) {
-      let distritoId = zona.substring(2).trim()
-      // Para distritos menores a 10, eliminar el 0 inicial si existe
-      if (distritoId.startsWith('0') && distritoId.length === 2) {
-        distritoId = distritoId.substring(1)
-      }
-      return distritoId
-    }
-    return zona
-  }
-
   // Función para obtener el nombre completo del distrito
   const getDistritoNombre = (id) => {
     const distrito = nombresDistritos.find(d => d.id === id)
     return distrito ? distrito.name : `Distrito ${id}`
   }
 
+  // Función para obtener los escaños de un distrito
+  const getEscanos = (id) => {
+    if (!escanos || escanos.length === 0) return null
+    const escano = escanos.find(e => e.numero_distrito === parseInt(id))
+    console.log('Buscando escaños para distrito:', id, 'Resultado:', escano)
+    return escano ? escano.escanos : null
+  }
+
   // Función para obtener el nombre completo del pacto
   const getPactoNombre = (codigo) => {
     return PACTO_NOMBRES[codigo] || codigo
+  }
+
+  // Función para obtener el nombre completo del partido
+  const getPartidoNombre = (codigo) => {
+    return PARTIDO_NOMBRES[codigo] || codigo
   }
 
   // Función para obtener el color del pacto
@@ -76,7 +127,8 @@ function App() {
 
   // Función para obtener candidatos filtrados
   const getCandidatosFiltrados = () => {
-    let candidatosDis = candidatos.filter(c => normalizarDistritoId(c.zona) === selectedDistrito)
+    // Los candidatos ya vienen filtrados por distrito desde la API
+    let candidatosDis = candidatos
     
     if (mostrarSoloConVotos) {
       candidatosDis = candidatosDis.filter(tieneVotos)
@@ -101,14 +153,6 @@ function App() {
     return filtrados
   }
 
-  /*
-  // Función para obtener el pacto de una lista desde los partidos
-  const getPactoDelista = (codigoLista) => {
-    // Buscar en los partidos acumulados uno que coincida con el código de la lista
-    const partido = partidosAcumulados.find(p => p.codigo === codigoLista)
-    return partido ? partido.pacto : null
-  } */
-
   // Función para obtener votos acumulados por partido del distrito seleccionado
   const getPartidosDistrito = () => {
     if (!selectedDistrito || !partidosAcumulados.length) return []
@@ -130,24 +174,14 @@ function App() {
       try {
         setLoading(true)
         
-        // Obtener candidatos
-        const candidatosResponse = await fetch('http://127.0.0.1:5000/api/candidatos')
-        if (!candidatosResponse.ok) {
-          throw new Error('Error al obtener los candidatos')
-        }
-        const candidatosData = await candidatosResponse.json()
-        setCandidatos(candidatosData)
-        
-        // Extraer distritos únicos usando la función normalizar
-        const distritosUnicos = [...new Set(candidatosData.map(candidato => 
-          normalizarDistritoId(candidato.zona)
-        ))].filter(distrito => distrito && distrito !== '')
-        
-        // Mapear con nombres completos y ordenar
-        const distritosConNombres = distritosUnicos.map(id => ({
-          id,
-          nombre: getDistritoNombre(id)
-        })).sort((a, b) => parseInt(a.id) - parseInt(b.id))
+        // Crear lista de distritos del 1 al 28
+        const distritosConNombres = Array.from({ length: 28 }, (_, i) => {
+          const id = (i + 1).toString()
+          return {
+            id,
+            nombre: getDistritoNombre(id)
+          }
+        })
         
         setDistritos(distritosConNombres)
         setLoading(false)
@@ -164,48 +198,67 @@ function App() {
     const distrito = e.target.value
     setSelectedDistrito(distrito)
     
-    // Obtener votos acumulados cuando se selecciona un distrito
+    // Limpiar datos inmediatamente
+    setCandidatos([])
+    setVotosAcumulados([])
+    setPartidosAcumulados([])
+    
+    // Obtener candidatos del distrito seleccionado
     if (distrito) {
-      fetchVotosAcumulados(distrito)
-    } else {
-      setVotosAcumulados([])
-      setPartidosAcumulados([])
+      fetchCandidatosDistrito(distrito)
     }
   }
 
-  const fetchVotosAcumulados = async (distrito) => {
+  const fetchCandidatosDistrito = async (distrito) => {
     try {
       setLoadingVotos(true)
       
-      // Intentar con parámetro de distrito primero
-      let url = `http://127.0.0.1:5000/api/votos_acumulados?distrito=${distrito}`
-      let response = await fetch(url)
-      
-      // Si no funciona con parámetro, intentar sin él
-      if (!response.ok) {
-        url = 'http://127.0.0.1:5000/api/votos_acumulados'
-        response = await fetch(url)
-      }
+      // Obtener candidatos del distrito
+      const url = `http://127.0.0.1:5000/api/candidatos/${distrito}`
+      const response = await fetch(url)
       
       if (!response.ok) {
-        throw new Error('Error al obtener los votos acumulados')
+        throw new Error('Error al obtener los candidatos del distrito')
       }
       
-      const votosData = await response.json()
-      console.log('Datos de votos acumulados:', votosData)
+      const data = await response.json()
+      console.log('Datos del distrito:', data)
       
-      // Extraer listas y partidos
-      const listas = Array.isArray(votosData) ? votosData : (votosData.listas || [])
-      const partidos = votosData.partidos || []
+      // Extraer candidatos
+      const candidatosDistrito = data.candidatos || []
+      console.log('Candidatos extraídos:', candidatosDistrito.length)
+      
+      // Extraer listas y partidos desde acumulado
+      const acumulado = data.acumulado || {}
+      const listas = acumulado.listas || []
+      const partidos = acumulado.partidos || []
       
       console.log('Listas extraídas:', listas.length)
       console.log('Partidos extraídos:', partidos.length)
       
+      // Obtener información de escaños del distrito
+      try {
+        const escanosResponse = await fetch(`http://127.0.0.1:5000/api/escanos/${distrito}`)
+        console.log('Response escaños status:', escanosResponse.status)
+        if (escanosResponse.ok) {
+          const escanosData = await escanosResponse.json()
+          console.log('Datos de escaños recibidos:', escanosData)
+          // La API ahora devuelve solo el número de escaños
+          setEscanos([{ numero_distrito: parseInt(distrito), escanos: escanosData }])
+        } else {
+          console.error('Error al obtener escaños, status:', escanosResponse.status)
+        }
+      } catch (escanosError) {
+        console.error('Error en fetch de escaños:', escanosError)
+      }
+      
+      setCandidatos(candidatosDistrito)
       setVotosAcumulados(listas)
       setPartidosAcumulados(partidos)
       setLoadingVotos(false)
     } catch (err) {
-      console.error('Error al obtener votos acumulados:', err)
+      console.error('Error al obtener candidatos del distrito:', err)
+      setCandidatos([])
       setVotosAcumulados([])
       setPartidosAcumulados([])
       setLoadingVotos(false)
@@ -295,12 +348,17 @@ function App() {
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-6">
                 <h3 className="text-lg font-semibold text-blue-800 mb-2">
                   {getDistritoNombre(selectedDistrito)}
+                  {getEscanos(selectedDistrito) && (
+                    <span className="ml-2 text-sm font-normal text-blue-600">
+                      ({getEscanos(selectedDistrito)} escaños)
+                    </span>
+                  )}
                 </h3>
                 <div className="text-sm text-gray-600">
                   Candidatos en este distrito: {getCandidatosFiltrados().length}
-                  {mostrarSoloConVotos && (
+                  {mostrarSoloConVotos && candidatos.length > getCandidatosFiltrados().length && (
                     <span className="text-gray-500 ml-1">
-                      (con votos de {candidatos.filter(c => normalizarDistritoId(c.zona) === selectedDistrito).length} total)
+                      (con votos de {candidatos.length} total)
                     </span>
                   )}
                 </div>
@@ -393,7 +451,7 @@ function App() {
                 </div>
               </div>
 
-              {/* Tabla de Votos Acumulados por Lista y Partido */}
+              {/* Tabla de Votos Acumulados por Pacto */}
               <div className="bg-white rounded-lg shadow-md overflow-hidden mt-8">
                 <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
                   <div className="flex items-center">
@@ -401,10 +459,10 @@ function App() {
                       <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd"/>
                       </svg>
-                      <span className="font-medium">Votos Acumulados por Lista</span>
+                      <span className="font-medium">Votos Acumulados por Pacto</span>
                     </div>
                     <span className="text-gray-500">
-                      Total Listas: {getListasDistrito().length}
+                      Total Pactos: {getListasDistrito().length}
                     </span>
                   </div>
                 </div>
@@ -425,7 +483,7 @@ function App() {
                             Código
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Nombre Lista
+                            Pacto
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Votos Reales
@@ -436,38 +494,30 @@ function App() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
-                        {getListasDistrito().map((lista, index) => {
-                          // El código de la lista ES el código del pacto
-                          const pactoLista = lista.codigo
-                          return (
-                            <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {lista.codigo}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 text-sm text-gray-700">
-                                {pactoLista ? (
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPactoColor(pactoLista)}`}>
-                                    {getPactoNombre(pactoLista)}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-400 text-xs">Sin pacto</span>
-                                )}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <span className="font-medium">
-                                  {lista.votos_reales ? lista.votos_reales.toLocaleString() : '0'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <span className="font-medium">
-                                  {lista.votos_encuesta ? lista.votos_encuesta.toFixed(1) + '%' : '0%'}
-                                </span>
-                              </td>
-                            </tr>
-                          )
-                        })}
+                        {getListasDistrito().map((lista, index) => (
+                          <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPactoColor(lista.codigo)}`}>
+                                {lista.codigo}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {getPactoNombre(lista.codigo)}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <span className="font-medium">
+                                {lista.votos_reales ? lista.votos_reales.toLocaleString() : '0'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <span className="font-medium">
+                                {lista.votos_encuesta ? lista.votos_encuesta.toFixed(1) + '%' : '0%'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -507,7 +557,7 @@ function App() {
                               Código
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Nombre Partido
+                              Partido
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Pacto
@@ -530,7 +580,7 @@ function App() {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">
-                                  {partido.nombre}
+                                  {getPartidoNombre(partido.codigo)}
                                 </div>
                               </td>
                               <td className="px-6 py-4 text-sm text-gray-700">
@@ -561,7 +611,7 @@ function App() {
 
           <div className="mt-6 text-sm text-gray-500">
             <p>Total de distritos disponibles: {distritos.length}</p>
-            <p>Total de candidatos: {candidatos.length}</p>
+            {selectedDistrito && <p>Candidatos en distrito seleccionado: {candidatos.length}</p>}
           </div>
         </div>
       </div>
