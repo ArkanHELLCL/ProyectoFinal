@@ -176,7 +176,7 @@ const HemicicloPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 py-8 px-4">
+    <div className="min-h-screen bg-linear-to-br from-indigo-50 to-purple-100 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
@@ -223,7 +223,7 @@ const HemicicloPage = () => {
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-indigo-500 to-purple-600 h-4 rounded-full transition-all duration-300 flex items-center justify-end"
+                  className="bg-linear-to-r from-indigo-500 to-purple-600 h-4 rounded-full transition-all duration-300 flex items-center justify-end"
                   style={{ width: `${progress}%` }}
                 >
                   {progress > 10 && (
@@ -260,7 +260,7 @@ const HemicicloPage = () => {
         {/* Hemiciclo */}
         {candidatosElectos.length > 0 && !loading && (
           <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
-            <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200">
+            <div className="px-6 py-4 bg-linear-to-r from-indigo-50 to-purple-50 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-indigo-600">
                   <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -298,7 +298,7 @@ const HemicicloPage = () => {
                 </div>
               </div>
             </div>
-            <div className="p-8 flex justify-center bg-gradient-to-b from-gray-50 to-white">
+            <div className="p-8 flex justify-center bg-linear-to-b from-gray-50 to-white">
               <Hemiciclo
                 candidatosElectos={candidatosElectos}
                 getPactoColor={colorearPor === 'pacto' ? getPactoColor : getPartidoColor}

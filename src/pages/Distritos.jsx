@@ -333,7 +333,7 @@ function Distritos() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
@@ -601,7 +601,7 @@ function Distritos() {
                                         </svg>
                                       </button>
                                     )}
-                                    <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm bg-gradient-to-r from-blue-400 to-blue-600 text-white ${getPactoColor(lista.codigo)}`}>
+                                    <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm bg-linear-to-r from-blue-400 to-blue-600 text-white ${getPactoColor(lista.codigo)}`}>
                                       {lista.codigo}
                                     </span>
                                   </div>
@@ -653,7 +653,7 @@ function Distritos() {
                               {tieneElectos && (
                                 <tr className={`transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 h-0'}`}>
                                   <td colSpan="5" className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'px-6 py-4' : 'px-6 py-0'}`}>
-                                    <div className={`bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg transition-all duration-300 ${isExpanded ? 'p-4 border-2 border-blue-200' : 'p-0'}`}>
+                                    <div className={`bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg transition-all duration-300 ${isExpanded ? 'p-4 border-2 border-blue-200' : 'p-0'}`}>
                                       {isExpanded && (
                                         <div className="animate-in fade-in duration-300">
                                           <div className="flex items-center gap-2 mb-4">
@@ -774,7 +774,7 @@ function Distritos() {
                             return (
                               <tr key={index} className={`hover:bg-blue-50 transition-all duration-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-md">
+                                  <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-linear-to-br from-blue-500 to-blue-600 shadow-md">
                                     <span className="text-sm font-bold text-white">{partido.codigo}</span>
                                   </div>
                                 </td>
