@@ -246,10 +246,9 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
         <div
           className="absolute bg-gray-900 text-white px-4 py-3 rounded-lg shadow-xl z-10 pointer-events-none"
           style={{
-            left: '50%',
-            top: '10px',
-            transform: 'translateX(-50%)',
-            minWidth: '250px'
+            left: 'calc(100% - 60px)',
+            top: '0',
+            minWidth: '280px'
           }}
         >
           <div className="flex items-start gap-3">
@@ -257,17 +256,17 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
               <img 
                 src={`https://static.emol.cl/emol50/especiales/img/2025/elecciones/dip/${getCandidateInfo(hoveredSeat).id_foto}.jpg`}
                 alt={getCandidateInfo(hoveredSeat).nombre}
-                className="w-16 h-16 rounded-lg object-cover border-2 border-gray-600"
+                className="w-20 h-20 rounded-lg object-cover border-2 border-gray-600"
                 onError={(e) => {
                   e.target.style.display = 'none'
                 }}
               />
             )}
             <div className="flex-1">
-              <div className="text-sm font-bold mb-1">
+              <div className="text-base font-bold mb-1">
                 {getCandidateInfo(hoveredSeat).nombre}
               </div>
-              <div className="text-xs text-gray-300">
+              <div className="text-sm text-gray-300">
                 <div>Partido: {getPartidoNombre(getCandidateInfo(hoveredSeat).partido)}</div>
                 <div className="mt-1">
                   Escaño #{hoveredSeat + 1}
@@ -277,13 +276,13 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
           </div>
           {/* Flecha del tooltip */}
           <div 
-            className="absolute left-1/2 -bottom-2 transform -translate-x-1/2"
+            className="absolute -left-2 top-1/2 transform -translate-y-1/2"
             style={{
               width: 0,
               height: 0,
-              borderLeft: '8px solid transparent',
-              borderRight: '8px solid transparent',
-              borderTop: '8px solid #111827'
+              borderTop: '8px solid transparent',
+              borderBottom: '8px solid transparent',
+              borderRight: '8px solid #111827'
             }}
           />
         </div>
