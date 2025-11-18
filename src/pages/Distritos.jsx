@@ -427,6 +427,7 @@ function Distritos() {
                         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
                       </svg>
                       <span className="font-medium">Candidatos cargados</span>
+                      <span className="text-xs text-gray-500 ml-2">(votos de encuesta)</span>
                     </div>
                     <span className="text-gray-500">
                       Total: {getCandidatosFiltrados().length}
@@ -448,10 +449,7 @@ function Distritos() {
                           Pacto
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Votos Reales
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Votos Encuesta
+                          Votos
                         </th>
                       </tr>
                     </thead>
@@ -507,14 +505,22 @@ function Distritos() {
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <span className="font-medium">
-                                  {candidato.votos_reales ? candidato.votos_reales.toLocaleString() : '0'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <span className="font-medium">
-                                  {candidato.votos_encuesta ? candidato.votos_encuesta.toLocaleString() : '0'}
-                                </span>
+                                {(() => {
+                                  const porcentaje = candidato.votos_encuesta || 0
+                                  return (
+                                    <div className="flex items-center gap-2">
+                                      <div className="bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner" style={{ minWidth: '200px', width: '200px' }}>
+                                        <div 
+                                          className="h-full bg-indigo-600 rounded-full transition-all duration-300 shadow-sm"
+                                          style={{ width: `${porcentaje}%` }}
+                                        />
+                                      </div>
+                                      <span className="font-medium text-xs min-w-[45px] text-right">
+                                        {porcentaje}%
+                                      </span>
+                                    </div>
+                                  )
+                                })()}
                               </td>
                             </tr>
                           );
@@ -524,8 +530,8 @@ function Distritos() {
                 </div>
               </div>
 
-              {/* Tabla de Votos Acumulados por Pacto */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden mt-8">
+              {/* Tabla de Votos Acumulados por Partido */}
+              <div className="bg-white rounded-lg shadow-md overflow-hidden mt-8 max-w-full lg:max-w-6xl xl:max-w-7xl">
                 <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
                   <div className="flex items-center">
                     <div className="flex items-center text-green-600 mr-3">
@@ -568,10 +574,7 @@ function Distritos() {
                             </div>
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Votos Reales
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Votos Encuesta
+                            Votos
                           </th>
                         </tr>
                       </thead>
@@ -650,21 +653,29 @@ function Distritos() {
                                   })()}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  <span className="font-medium">
-                                    {lista.votos_reales ? lista.votos_reales.toLocaleString() : '0'}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  <span className="font-medium">
-                                    {lista.votos_encuesta ? lista.votos_encuesta.toFixed(1) + '%' : '0%'}
-                                  </span>
+                                  {(() => {
+                                    const porcentaje = lista.votos_encuesta || 0
+                                    return (
+                                      <div className="flex items-center gap-2">
+                                        <div className="bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner" style={{ minWidth: '200px', width: '200px' }}>
+                                          <div 
+                                            className="h-full bg-green-600 rounded-full transition-all duration-300 shadow-sm"
+                                            style={{ width: `${porcentaje}%` }}
+                                          />
+                                        </div>
+                                        <span className="font-medium text-xs min-w-[45px] text-right">
+                                          {porcentaje}%
+                                        </span>
+                                      </div>
+                                    )
+                                  })()}
                                 </td>
                               </tr>
                               
                               {/* Fila expandible con candidatos electos */}
                               {tieneElectos && (
                                 <tr className={`transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 h-0'}`}>
-                                  <td colSpan="5" className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'px-6 py-4' : 'px-6 py-0'}`}>
+                                  <td colSpan="4" className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'px-6 py-4' : 'px-6 py-0'}`}>
                                     <div className={`bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg transition-all duration-300 ${isExpanded ? 'p-4 border-2 border-blue-200' : 'p-0'}`}>
                                       {isExpanded && (
                                         <div className="animate-in fade-in duration-300">
@@ -783,10 +794,7 @@ function Distritos() {
                               </div>
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Votos Reales
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Votos Encuesta
+                              Votos
                             </th>
                           </tr>
                         </thead>
@@ -812,44 +820,52 @@ function Distritos() {
                                     {getPactoNombre(partido.pacto)}
                                   </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-3 py-4 whitespace-nowrap">
                                   {mujeresElectas > 0 ? (
-                                    <div className="flex items-center gap-2 bg-pink-50 px-3 py-2 rounded-lg border border-pink-200">
-                                      <svg className="w-5 h-5 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <div className="flex items-center gap-1 bg-pink-50 px-2 py-1.5 rounded-lg border border-pink-200">
+                                      <svg className="w-4 h-4 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
                                       </svg>
-                                      <span className="text-lg font-bold text-pink-700">{mujeresElectas}</span>
+                                      <span className="text-sm font-semibold text-pink-700">{mujeresElectas}</span>
                                     </div>
                                   ) : (
-                                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100">
-                                      <span className="text-sm text-gray-400">0</span>
+                                    <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-gray-100">
+                                      <span className="text-xs text-gray-400">0</span>
                                     </div>
                                   )}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-3 py-4 whitespace-nowrap">
                                   {aporteTotal > 0 ? (
-                                    <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
-                                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <div className="flex items-center gap-1 bg-green-50 px-2 py-1.5 rounded-lg border border-green-200">
+                                      <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
                                       </svg>
-                                      <span className="text-lg font-bold text-green-700">{aporteTotal.toFixed(2)} UF</span>
+                                      <span className="text-sm font-semibold text-green-700">{aporteTotal.toFixed(2)} UF</span>
                                     </div>
                                   ) : (
-                                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100">
-                                      <span className="text-sm text-gray-400">0 UF</span>
+                                    <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-gray-100">
+                                      <span className="text-xs text-gray-400">0 UF</span>
                                     </div>
                                   )}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  <span className="font-medium">
-                                    {partido.votos_reales ? partido.votos_reales.toLocaleString() : '0'}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  <span className="font-medium">
-                                    {partido.votos_encuesta ? partido.votos_encuesta.toFixed(1) + '%' : '0%'}
-                                  </span>
+                                <td className="px-6 py-4 text-sm text-gray-900">
+                                  {(() => {
+                                    const porcentaje = partido.votos_encuesta || 0
+                                    return (
+                                      <div className="flex items-center gap-2">
+                                        <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner" style={{ minWidth: '100px' }}>
+                                          <div 
+                                            className="h-full bg-blue-600 rounded-full transition-all duration-300 shadow-sm"
+                                            style={{ width: `${porcentaje}%` }}
+                                          />
+                                        </div>
+                                        <span className="font-medium text-xs min-w-[45px] text-right whitespace-nowrap">
+                                          {porcentaje}%
+                                        </span>
+                                      </div>
+                                    )
+                                  })()}
                                 </td>
                               </tr>
                             )
