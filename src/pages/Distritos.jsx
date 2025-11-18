@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import nombresDistritos from '../../mock/nombresDistritos.json'
+import { useVotos } from '../context/VotosContext'
 
 // URL base de la API según el entorno
 const API_BASE_URL = import.meta.env.VITE_API_URL || ''
@@ -70,6 +71,7 @@ const PARTIDO_NOMBRES = {
 };
 
 function Distritos() {
+  const { tipoVotos } = useVotos()
   const [candidatos, setCandidatos] = useState([])
   const [distritos, setDistritos] = useState([])
   const [escanos, setEscanos] = useState([])
@@ -346,12 +348,13 @@ function Distritos() {
               </svg>
               <span className="ml-2 font-medium">Volver</span>
             </Link>
-            <h1 className="text-4xl font-bold text-gray-800">
-              Análisis por Distrito
-              <span className="text-lg text-gray-500 ml-3 font-normal">(votos de encuesta)</span>
-            </h1>
+            <h1 className="text-4xl font-bold text-gray-800">Análisis por Distrito</h1>
           </div>
-          <p className="text-gray-600">Seleccione un distrito para visualizar la información electoral</p>
+          <p className="text-gray-600">
+            Seleccione un distrito para visualizar la información electoral - <span className="inline-block ml-1 px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
+              Votos de {tipoVotos === 'encuesta' ? 'Encuesta' : 'Reales'}
+            </span>
+          </p>
         </header>
 
         <div className="bg-white rounded-lg shadow-lg p-6">

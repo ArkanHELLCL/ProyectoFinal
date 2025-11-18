@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useVotos } from '../context/VotosContext'
 import Hemiciclo from '../components/Hemiciclo'
 import nombresDistritos from '../../mock/nombresDistritos.json'
 
@@ -41,6 +42,7 @@ const PARTIDO_NOMBRES = {
 }
 
 const HemicicloPage = () => {
+  const { tipoVotos } = useVotos()
   const [candidatosElectos, setCandidatosElectos] = useState([])
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -191,7 +193,12 @@ const HemicicloPage = () => {
             </Link>
             <h1 className="text-4xl font-bold text-gray-800">Visualización del Hemiciclo</h1>
           </div>
-          <p className="text-gray-600">Vista interactiva de la composición del hemiciclo parlamentario</p>
+          <p className="text-gray-600">
+            Vista interactiva de la composición del hemiciclo parlamentario
+            <span className="inline-block ml-2 px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
+              Votos de {tipoVotos === 'encuesta' ? 'Encuesta' : 'Reales'}
+            </span>
+          </p>
         </header>
 
         {/* Botón para cargar datos */}

@@ -1,13 +1,48 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { useVotos } from '../context/VotosContext'
 
 const Home = () => {
+  const { tipoVotos, setTipoVotos } = useVotos()
+
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <header className="text-center mb-12">
           <h1 className="text-5xl font-bold text-gray-800 mb-4">Sistema D'Hondt</h1>
           <p className="text-xl text-gray-600 mb-8">Sistema de visualización electoral para Chile</p>
+          
+          {/* Selector de tipo de votos */}
+          <div className="inline-flex items-center gap-3 bg-white rounded-lg shadow-md px-6 py-3">
+            <span className="text-sm font-medium text-gray-700">Tipo de votos:</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTipoVotos('encuesta')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  tipoVotos === 'encuesta'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Encuesta
+              </button>
+              <button
+                onClick={() => setTipoVotos('reales')}
+                disabled
+                className="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-400 cursor-not-allowed opacity-50"
+                title="Próximamente disponible"
+              >
+                Reales
+              </button>
+              <button
+                disabled
+                className="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-400 cursor-not-allowed opacity-50"
+                title="Disponible cuando los votos reales estén disponibles"
+              >
+                Comparativa
+              </button>
+            </div>
+          </div>
         </header>
 
         <div className="grid md:grid-cols-2 gap-6">
