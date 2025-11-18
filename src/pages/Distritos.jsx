@@ -346,7 +346,10 @@ function Distritos() {
               </svg>
               <span className="ml-2 font-medium">Volver</span>
             </Link>
-            <h1 className="text-4xl font-bold text-gray-800">Análisis por Distrito</h1>
+            <h1 className="text-4xl font-bold text-gray-800">
+              Análisis por Distrito
+              <span className="text-lg text-gray-500 ml-3 font-normal">(votos de encuesta)</span>
+            </h1>
           </div>
           <p className="text-gray-600">Seleccione un distrito para visualizar la información electoral</p>
         </header>
@@ -427,7 +430,6 @@ function Distritos() {
                         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
                       </svg>
                       <span className="font-medium">Candidatos cargados</span>
-                      <span className="text-xs text-gray-500 ml-2">(votos de encuesta)</span>
                     </div>
                     <span className="text-gray-500">
                       Total: {getCandidatosFiltrados().length}
