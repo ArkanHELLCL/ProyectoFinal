@@ -484,7 +484,19 @@ function Distritos() {
                           return (
                             <tr key={index} className={`${getPartidoColor(candidato.partido)} hover:bg-opacity-75 transition-colors duration-150`}>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {candidato.nombre}
+                                <div className="flex items-center gap-3">
+                                  {candidato.id_foto && (
+                                    <img 
+                                      src={`https://static.emol.cl/emol50/especiales/img/2025/elecciones/dip/${candidato.id_foto}.jpg`}
+                                      alt={candidato.nombre}
+                                      className="w-14 h-14 rounded-full object-cover border-2 border-gray-300"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none'
+                                      }}
+                                    />
+                                  )}
+                                  <span>{candidato.nombre}</span>
+                                </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                 {candidato.partido}
@@ -673,16 +685,28 @@ function Distritos() {
                                                 key={idx} 
                                                 className="flex items-center justify-between bg-white p-4 rounded-lg shadow-md border-l-4 border-green-500 hover:shadow-lg transition-shadow duration-200"
                                               >
-                                                <div className="flex-1">
-                                                  <div className="flex items-center gap-2 mb-1">
-                                                    <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                    </svg>
-                                                    <div className="font-bold text-gray-900">{candidato.nombre}</div>
-                                                  </div>
-                                                  <div className="text-xs text-gray-600 ml-6">
-                                                    <span className="font-semibold">{getPartidoNombre(candidato.partido)}</span>
-                                                    {candidato.cupo && <span> • Cupo: {candidato.cupo}</span>}
+                                                <div className="flex items-center gap-3 flex-1">
+                                                  {candidato.id_foto && (
+                                                    <img 
+                                                      src={`https://static.emol.cl/emol50/especiales/img/2025/elecciones/dip/${candidato.id_foto}.jpg`}
+                                                      alt={candidato.nombre}
+                                                      className="w-16 h-16 rounded-full object-cover border-2 border-green-500 shadow-sm"
+                                                      onError={(e) => {
+                                                        e.target.style.display = 'none'
+                                                      }}
+                                                    />
+                                                  )}
+                                                  <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                      <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                      </svg>
+                                                      <div className="font-bold text-gray-900">{candidato.nombre}</div>
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 ml-6">
+                                                      <span className="font-semibold">{getPartidoNombre(candidato.partido)}</span>
+                                                      {candidato.cupo && <span> • Cupo: {candidato.cupo}</span>}
+                                                    </div>
                                                   </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">

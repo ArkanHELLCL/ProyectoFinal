@@ -252,13 +252,27 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
             minWidth: '250px'
           }}
         >
-          <div className="text-sm font-bold mb-1">
-            {getCandidateInfo(hoveredSeat).nombre}
-          </div>
-          <div className="text-xs text-gray-300">
-            <div>Partido: {getPartidoNombre(getCandidateInfo(hoveredSeat).partido)}</div>
-            <div className="mt-1">
-              Escaño #{hoveredSeat + 1}
+          <div className="flex items-start gap-3">
+            {getCandidateInfo(hoveredSeat).id_foto && (
+              <img 
+                src={`https://static.emol.cl/emol50/especiales/img/2025/elecciones/dip/${getCandidateInfo(hoveredSeat).id_foto}.jpg`}
+                alt={getCandidateInfo(hoveredSeat).nombre}
+                className="w-16 h-16 rounded-lg object-cover border-2 border-gray-600"
+                onError={(e) => {
+                  e.target.style.display = 'none'
+                }}
+              />
+            )}
+            <div className="flex-1">
+              <div className="text-sm font-bold mb-1">
+                {getCandidateInfo(hoveredSeat).nombre}
+              </div>
+              <div className="text-xs text-gray-300">
+                <div>Partido: {getPartidoNombre(getCandidateInfo(hoveredSeat).partido)}</div>
+                <div className="mt-1">
+                  Escaño #{hoveredSeat + 1}
+                </div>
+              </div>
             </div>
           </div>
           {/* Flecha del tooltip */}
