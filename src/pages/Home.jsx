@@ -77,21 +77,24 @@ const Home = () => {
 
           {/* Tarjeta para Hemiciclo */}
           <Link
-            to="/hemiciclo"
+            to={tipoVotos === 'comparativa' ? '/comparativa' : '/hemiciclo'}
             className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <div className="flex flex-col items-center text-center">
-              <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-10 h-10 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+              <div className={`w-20 h-20 ${tipoVotos === 'comparativa' ? 'bg-purple-100' : 'bg-indigo-100'} rounded-full flex items-center justify-center mb-4`}>
+                <svg className={`w-10 h-10 ${tipoVotos === 'comparativa' ? 'text-purple-600' : 'text-indigo-600'}`} fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-gray-800 mb-2">Visualización Hemiciclo</h2>
               <p className="text-gray-600 mb-4">
-                Visualización interactiva de la composición del hemiciclo con 155 escaños
+                {tipoVotos === 'comparativa' 
+                  ? 'Comparación lado a lado entre encuesta y resultados reales'
+                  : 'Visualización interactiva de la composición del hemiciclo con 155 escaños'
+                }
               </p>
-              <div className="flex items-center text-indigo-600 font-semibold">
-                <span>Ver hemiciclo</span>
+              <div className={`flex items-center ${tipoVotos === 'comparativa' ? 'text-purple-600' : 'text-indigo-600'} font-semibold`}>
+                <span>{tipoVotos === 'comparativa' ? 'Ver comparativa' : 'Ver hemiciclo'}</span>
                 <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
