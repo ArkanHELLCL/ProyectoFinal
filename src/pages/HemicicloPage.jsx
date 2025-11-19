@@ -39,6 +39,11 @@ const PARTIDO_NOMBRES = {
   EVOP: "Evópoli",
   DEM: "Demócratas",
   PNL: "Partido Nacional Liberal",
+  AMR: "Amarillos por Chile",
+  AMA: "Amarillos por Chile",
+  PSC: "Partido Social Cristiano",
+  PTR: "Partido de Trabajadores Revolucionarios",
+  EVO: "Evópoli",
 }
 
 const HemicicloPage = () => {
@@ -49,6 +54,7 @@ const HemicicloPage = () => {
   const [currentDistrito, setCurrentDistrito] = useState('')
   const [error, setError] = useState(null)
   const [colorearPor, setColorearPor] = useState('pacto') // 'pacto' o 'partido'
+  const [distritosEnProceso, setDistritosEnProceso] = useState([]) // Para mostrar distritos procesándose en paralelo
 
   // Función para obtener el nombre del distrito
   const getDistritoNombre = (id) => {
@@ -56,48 +62,75 @@ const HemicicloPage = () => {
     return distrito ? distrito.name : `Distrito ${id}`
   }
 
-  // Función para cargar todos los candidatos electos de todos los distritos
+  // Función para cargar todos los candidatos electos de todos los distritos en paralelo
   const cargarTodosLosElectos = async () => {
     setLoading(true)
     setError(null)
     setCandidatosElectos([])
     setProgress(0)
 
-    const todosLosElectos = []
     const totalDistritos = 28
+    const distritosActuales = []
 
     try {
+      // Crear todas las promesas para los 28 distritos
+      const promises = []
+      
       for (let distrito = 1; distrito <= totalDistritos; distrito++) {
-        setCurrentDistrito(`${distrito} - ${getDistritoNombre(distrito.toString())}`)
+        distritosActuales.push({
+          id: distrito,
+          nombre: getDistritoNombre(distrito.toString())
+        })
         
-        try {
-          const url = `${API_BASE_URL}/api/candidatos/${distrito}`
-          const response = await fetch(url)
-          
-          if (response.ok) {
-            const data = await response.json()
-            
-            // Extraer candidatos electos
-            if (data.resultados && data.resultados.candidatos_electos) {
-              const electos = data.resultados.candidatos_electos
-              todosLosElectos.push(...electos)
+        const promise = fetch(`${API_BASE_URL}/api/candidatos/${distrito}?votos=${tipoVotos}`)
+          .then(response => {
+            if (response.ok) {
+              return response.json()
             }
-          }
-        } catch (err) {
-          console.error(`Error al obtener distrito ${distrito}:`, err)
-        }
-
-        // Actualizar progreso
-        const progressPercent = Math.round((distrito / totalDistritos) * 100)
-        setProgress(progressPercent)
-        setCandidatosElectos([...todosLosElectos])
+            return null
+          })
+          .then(data => {
+            if (data && data.resultados && data.resultados.candidatos_electos) {
+              return {
+                distrito,
+                electos: data.resultados.candidatos_electos
+              }
+            }
+            return null
+          })
+          .catch(err => {
+            console.error(`Error al obtener distrito ${distrito}:`, err)
+            return null
+          })
+        
+        promises.push(promise)
       }
-
+      
+      // Mostrar todos los distritos en proceso
+      setDistritosEnProceso(distritosActuales)
+      setProgress(50)
+      
+      // Esperar a que se completen todas las promesas
+      const results = await Promise.all(promises)
+      
+      // Agregar todos los resultados exitosos
+      const todosLosElectos = []
+      results.forEach(result => {
+        if (result && result.electos) {
+          todosLosElectos.push(...result.electos)
+        }
+      })
+      
+      // Actualizar con todos los candidatos
+      setCandidatosElectos(todosLosElectos)
+      setProgress(100)
       setCurrentDistrito('¡Proceso completado!')
+      setDistritosEnProceso([])
       setLoading(false)
     } catch (err) {
       setError(`Error al cargar los candidatos electos: ${err.message}`)
       setLoading(false)
+      setDistritosEnProceso([])
     }
   }
 
@@ -123,7 +156,7 @@ const HemicicloPage = () => {
       FA: "bg-red-200 text-red-900",         // Frente Amplio
       RN: "bg-blue-200 text-blue-900",       // Renovación Nacional
       PC: "bg-red-300 text-red-950",         // Partido Comunista
-      UDI: "bg-blue-300 text-blue-950",      // Unión Demócrata Independiente
+      UDI: "bg-blue-400 text-blue-950",      // Unión Demócrata Independiente
       REP: "bg-cyan-300 text-cyan-950",      // Partido Republicano
       PPD: "bg-red-200 text-red-900",        // Partido Por la Democracia
       PNL: "bg-yellow-300 text-yellow-950",  // Partido Nacional Liberal
@@ -136,7 +169,12 @@ const HemicicloPage = () => {
       IND: "bg-slate-300 text-slate-950",    // Independiente
       PDG: "bg-orange-200 text-orange-900",  // Partido de la Gente
       EVOP: "bg-indigo-200 text-indigo-900", // Evópoli
+      EVO: "bg-indigo-200 text-indigo-900",  // Evópoli (alias)
       DEM: "bg-indigo-200 text-indigo-900",  // Demócratas
+      PSC: "bg-yellow-200 text-yellow-900",  // Partido Social Cristiano
+      AMR: "bg-amber-300 text-amber-950",    // Amarillos por Chile
+      AMA: "bg-amber-300 text-amber-950",    // Amarillos por Chile (alias)
+      PTR: "bg-rose-300 text-rose-950",      // Trabajadores Revolucionarios
     }
     return colores[codigo] || "bg-gray-200 text-gray-800"
   }
@@ -196,7 +234,7 @@ const HemicicloPage = () => {
           <p className="text-gray-600">
             Vista interactiva de la composición del hemiciclo parlamentario
             <span className="inline-block ml-2 px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
-              Votos de {tipoVotos === 'encuesta' ? 'Encuesta' : 'Reales'}
+              Votos de {tipoVotos === 'encuesta' ? 'Encuesta' : tipoVotos === 'reales' ? 'Reales' : 'Comparativa'}
             </span>
           </p>
         </header>
@@ -225,7 +263,7 @@ const HemicicloPage = () => {
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <div className="mb-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">Cargando datos...</span>
+                <span className="text-sm font-medium text-gray-700">Cargando datos en paralelo...</span>
                 <span className="text-sm font-semibold text-indigo-600">{progress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
@@ -239,10 +277,32 @@ const HemicicloPage = () => {
                 </div>
               </div>
             </div>
+            
+            {/* Mostrar distritos procesándose en paralelo */}
+            {distritosEnProceso.length > 0 && (
+              <div className="mb-4">
+                <div className="text-xs font-medium text-gray-600 mb-2">Procesando en paralelo:</div>
+                <div className="flex flex-wrap gap-2">
+                  {distritosEnProceso.map(distrito => (
+                    <div 
+                      key={distrito.id}
+                      className="flex items-center gap-1 px-3 py-1 bg-indigo-50 border border-indigo-200 rounded-full text-xs"
+                    >
+                      <svg className="w-3 h-3 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="font-medium text-indigo-700">D{distrito.id}</span>
+                      <span className="text-gray-600">{distrito.nombre}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <svg className="w-5 h-5 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg className="w-5 h-5 text-indigo-600 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
               </svg>
               <span className="font-medium">{currentDistrito}</span>
             </div>

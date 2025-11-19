@@ -11,7 +11,7 @@ export const useVotos = () => {
 }
 
 export const VotosProvider = ({ children }) => {
-  const [tipoVotos, setTipoVotos] = useState('encuesta') // 'encuesta' o 'reales'
+  const [tipoVotos, setTipoVotos] = useState('encuesta') // 'encuesta', 'reales' o 'comparativa'
 
   return (
     <VotosContext.Provider value={{ tipoVotos, setTipoVotos }}>

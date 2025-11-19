@@ -257,8 +257,8 @@ function Distritos() {
     try {
       setLoadingVotos(true)
       
-      // Obtener candidatos del distrito
-      const url = `${API_BASE_URL}/api/candidatos/${distrito}`
+      // Obtener candidatos del distrito con el tipo de votos seleccionado
+      const url = `${API_BASE_URL}/api/candidatos/${distrito}?votos=${tipoVotos}`
       const response = await fetch(url)
       
       if (!response.ok) {
@@ -352,7 +352,7 @@ function Distritos() {
           </div>
           <p className="text-gray-600">
             Seleccione un distrito para visualizar la información electoral - <span className="inline-block ml-1 px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
-              Votos de {tipoVotos === 'encuesta' ? 'Encuesta' : 'Reales'}
+              Votos de {tipoVotos === 'encuesta' ? 'Encuesta' : tipoVotos === 'reales' ? 'Reales' : 'Comparativa'}
             </span>
           </p>
         </header>

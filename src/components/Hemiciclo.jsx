@@ -123,6 +123,8 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
         // Colores de Partidos
         'bg-red-200': '#fecaca',
         'bg-blue-200': '#bfdbfe',
+        'bg-blue-300': '#93c5fd',
+        'bg-blue-400': '#60a5fa',
         'bg-yellow-200': '#fef08a',
         'bg-yellow-300': '#fde047',
         'bg-purple-200': '#e9d5ff',
@@ -133,6 +135,8 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
         'bg-lime-300': '#bef264',
         'bg-slate-300': '#cbd5e1',
         'bg-indigo-200': '#c7d2fe',
+        'bg-amber-300': '#fcd34d',
+        'bg-rose-300': '#fda4af',
       }
       
       // Buscar el color en colorClasses
@@ -169,6 +173,8 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
         // Colores de borde para Partidos
         'bg-red-200': '#991b1b',
         'bg-blue-200': '#1e40af',
+        'bg-blue-300': '#1e40af',
+        'bg-blue-400': '#1e3a8a',
         'bg-yellow-200': '#a16207',
         'bg-yellow-300': '#a16207',
         'bg-purple-200': '#6b21a8',
@@ -179,6 +185,8 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
         'bg-lime-300': '#4d7c0f',
         'bg-slate-300': '#475569',
         'bg-indigo-200': '#4338ca',
+        'bg-amber-300': '#b45309',
+        'bg-rose-300': '#be123c',
       }
       
       for (const [className, color] of Object.entries(strokeColorMap)) {

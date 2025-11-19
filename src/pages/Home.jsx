@@ -28,16 +28,21 @@ const Home = () => {
               </button>
               <button
                 onClick={() => setTipoVotos('reales')}
-                disabled
-                className="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-400 cursor-not-allowed opacity-50"
-                title="Próximamente disponible"
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  tipoVotos === 'reales'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
               >
                 Reales
               </button>
               <button
-                disabled
-                className="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-400 cursor-not-allowed opacity-50"
-                title="Disponible cuando los votos reales estén disponibles"
+                onClick={() => setTipoVotos('comparativa')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  tipoVotos === 'comparativa'
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
               >
                 Comparativa
               </button>
