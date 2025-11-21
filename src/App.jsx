@@ -1,5 +1,4 @@
-﻿import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+﻿import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import Distritos from './pages/Distritos'
 import HemicicloPage from './pages/HemicicloPage'

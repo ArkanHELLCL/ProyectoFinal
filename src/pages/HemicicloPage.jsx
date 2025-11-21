@@ -19,6 +19,8 @@ const PACTO_NOMBRES = {
   I: "Partido de la Gente",
   J: "Chile Grande y Unido",
   K: "Cambio por Chile",
+  JK: "Toda la Derecha",
+  AH: "Toda la Izquierda",
 }
 
 const PARTIDO_NOMBRES = {
@@ -47,14 +49,17 @@ const PARTIDO_NOMBRES = {
 }
 
 const HemicicloPage = () => {
-  const { tipoVotos } = useVotos()
+  const { tipoVotos, tipoCalculo } = useVotos()
   const [candidatosElectos, setCandidatosElectos] = useState([])
+  const [candidatosElectosCargando, setCandidatosElectosCargando] = useState(0)
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [currentDistrito, setCurrentDistrito] = useState('')
   const [error, setError] = useState(null)
   const [colorearPor, setColorearPor] = useState('pacto') // 'pacto' o 'partido'
   const [distritosEnProceso, setDistritosEnProceso] = useState([]) // Para mostrar distritos procesándose en paralelo
+  const [distritosCompletados, setDistritosCompletados] = useState(0)
+  const [estadoDistritos, setEstadoDistritos] = useState({}) // { [id]: 'pendiente' | 'ok' | 'error' }
 
   // Función para obtener el nombre del distrito
   const getDistritoNombre = (id) => {
@@ -67,22 +72,32 @@ const HemicicloPage = () => {
     setLoading(true)
     setError(null)
     setCandidatosElectos([])
+    setCandidatosElectosCargando(0)
     setProgress(0)
+    setDistritosCompletados(0)
+    setEstadoDistritos({})
 
     const totalDistritos = 28
     const distritosActuales = []
 
     try {
-      // Crear todas las promesas para los 28 distritos
+      const todosLosElectos = []
       const promises = []
-      
+
       for (let distrito = 1; distrito <= totalDistritos; distrito++) {
         distritosActuales.push({
           id: distrito,
           nombre: getDistritoNombre(distrito.toString())
         })
-        
-        const promise = fetch(`${API_BASE_URL}/api/candidatos/${distrito}?votos=${tipoVotos}`)
+
+        let url = `${API_BASE_URL}/api/candidatos/${distrito}?votos=${tipoVotos}`
+        if (tipoCalculo === 'izquierda') {
+          url += '&pacto_ficticio=toda_izquierda'
+        } else if (tipoCalculo === 'derecha') {
+          url += '&pacto_ficticio=toda_derecha'
+        }
+
+        const promise = fetch(url)
           .then(response => {
             if (response.ok) {
               return response.json()
@@ -91,37 +106,40 @@ const HemicicloPage = () => {
           })
           .then(data => {
             if (data && data.resultados && data.resultados.candidatos_electos) {
-              return {
-                distrito,
-                electos: data.resultados.candidatos_electos
-              }
+              todosLosElectos.push(...data.resultados.candidatos_electos)
+              setEstadoDistritos(prev => ({ ...prev, [distrito]: 'ok' }))
+              setCandidatosElectosCargando(prev => prev + data.resultados.candidatos_electos.length)
+            } else {
+              setEstadoDistritos(prev => ({ ...prev, [distrito]: 'error' }))
             }
+            // Actualizar progreso y distrito actual
+            setDistritosCompletados(prev => {
+              const nuevo = prev + 1
+              setProgress(Math.round((nuevo / totalDistritos) * 100))
+              setCurrentDistrito(`Distrito ${distrito} procesado`)
+              return nuevo
+            })
             return null
           })
           .catch(err => {
             console.error(`Error al obtener distrito ${distrito}:`, err)
+            setEstadoDistritos(prev => ({ ...prev, [distrito]: 'error' }))
+            setDistritosCompletados(prev => {
+              const nuevo = prev + 1
+              setProgress(Math.round((nuevo / totalDistritos) * 100))
+              setCurrentDistrito(`Distrito ${distrito} error`)
+              return nuevo
+            })
             return null
           })
-        
+
         promises.push(promise)
       }
-      
-      // Mostrar todos los distritos en proceso
+
       setDistritosEnProceso(distritosActuales)
-      setProgress(50)
-      
-      // Esperar a que se completen todas las promesas
-      const results = await Promise.all(promises)
-      
-      // Agregar todos los resultados exitosos
-      const todosLosElectos = []
-      results.forEach(result => {
-        if (result && result.electos) {
-          todosLosElectos.push(...result.electos)
-        }
-      })
-      
-      // Actualizar con todos los candidatos
+
+      await Promise.all(promises)
+
       setCandidatosElectos(todosLosElectos)
       setProgress(100)
       setCurrentDistrito('¡Proceso completado!')
@@ -147,6 +165,8 @@ const HemicicloPage = () => {
       I: "bg-orange-300 text-orange-950",    // Partido de la Gente
       J: "bg-sky-300 text-sky-950",          // Chile Grande y Unido (centro-derecha)
       K: "bg-violet-300 text-violet-950",    // Cambio por Chile
+      JK: "bg-blue-500 text-white",          // Toda la Derecha
+      AH: "bg-red-500 text-white",           // Toda la Izquierda
     }
     return colores[codigo] || "bg-gray-100 text-gray-800"
   }
@@ -283,19 +303,38 @@ const HemicicloPage = () => {
               <div className="mb-4">
                 <div className="text-xs font-medium text-gray-600 mb-2">Procesando en paralelo:</div>
                 <div className="flex flex-wrap gap-2">
-                  {distritosEnProceso.map(distrito => (
-                    <div 
-                      key={distrito.id}
-                      className="flex items-center gap-1 px-3 py-1 bg-indigo-50 border border-indigo-200 rounded-full text-xs"
-                    >
-                      <svg className="w-3 h-3 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span className="font-medium text-indigo-700">D{distrito.id}</span>
-                      <span className="text-gray-600">{distrito.nombre}</span>
-                    </div>
-                  ))}
+                  {distritosEnProceso.map(distrito => {
+                    const estado = estadoDistritos[distrito.id]
+                    return (
+                      <div 
+                        key={distrito.id}
+                        className="flex items-center gap-1 px-3 py-1 bg-indigo-50 border border-indigo-200 rounded-full text-xs"
+                      >
+                        {estado === 'ok' ? (
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500">
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                              <path stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                        ) : estado === 'error' ? (
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500">
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                              <path stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-200">
+                            <svg className="w-4 h-4 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          </span>
+                        )}
+                        <span className="font-medium text-indigo-700">D{distrito.id}</span>
+                        <span className="text-gray-600">{distrito.nombre}</span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -307,7 +346,7 @@ const HemicicloPage = () => {
               <span className="font-medium">{currentDistrito}</span>
             </div>
             <div className="mt-4 text-xs text-gray-500">
-              Total de candidatos electos cargados: <span className="font-bold text-indigo-600">{candidatosElectos.length}</span> / 155
+              Total de candidatos electos cargados: <span className="font-bold text-indigo-600">{candidatosElectosCargando}</span> / 155
             </div>
           </div>
         )}
@@ -460,14 +499,26 @@ const HemicicloPage = () => {
               Leyenda de Pactos
             </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {Object.entries(PACTO_NOMBRES).map(([codigo, nombre]) => (
-              <div key={codigo} className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPactoColor(codigo)}`}>
-                  {codigo}
-                </span>
-                <span className="text-sm text-gray-700">{nombre}</span>
-              </div>
-            ))}
+            {Object.entries(PACTO_NOMBRES)
+              .filter(([codigo]) => {
+                if (tipoCalculo === 'derecha') {
+                  // Mostrar JK y ocultar J y K individuales
+                  return codigo === 'JK' || (!['J', 'K', 'AH'].includes(codigo))
+                } else if (tipoCalculo === 'izquierda') {
+                  // Mostrar AH y ocultar A, B, C, D, F, G, H individuales
+                  return codigo === 'AH' || (!['A', 'B', 'C', 'D', 'F', 'G', 'H', 'JK'].includes(codigo))
+                }
+                // Modo normal: ocultar JK y AH
+                return !['JK', 'AH'].includes(codigo)
+              })
+              .map(([codigo, nombre]) => (
+                <div key={codigo} className="flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPactoColor(codigo)}`}>
+                    {codigo}
+                  </span>
+                  <span className="text-sm text-gray-700">{nombre}</span>
+                </div>
+              ))}
           </div>
           </div>
         )}

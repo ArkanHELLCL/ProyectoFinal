@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useVotos } from '../context/VotosContext'
 
 const Home = () => {
-  const { tipoVotos, setTipoVotos } = useVotos()
+  const { tipoVotos, setTipoVotos, tipoCalculo, setTipoCalculo } = useVotos()
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 py-8 px-4">
@@ -13,7 +13,7 @@ const Home = () => {
           <p className="text-xl text-gray-600 mb-8">Sistema de visualización electoral para Chile</p>
           
           {/* Selector de tipo de votos */}
-          <div className="inline-flex items-center gap-3 bg-white rounded-lg shadow-md px-6 py-3">
+          <div className="inline-flex items-center gap-3 bg-white rounded-lg shadow-md px-6 py-3 mb-6">
             <span className="text-sm font-medium text-gray-700">Tipo de votos:</span>
             <div className="flex gap-2">
               <button
@@ -45,6 +45,43 @@ const Home = () => {
                 }`}
               >
                 Comparativa
+              </button>
+            </div>
+          </div>
+
+          {/* Selector de tipo de cálculo */}
+          <div className="inline-flex items-center gap-3 bg-white rounded-lg shadow-md px-6 py-3">
+            <span className="text-sm font-medium text-gray-700">Tipo de cálculo:</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTipoCalculo('normal')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  tipoCalculo === 'normal'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Normal
+              </button>
+              <button
+                onClick={() => setTipoCalculo('derecha')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  tipoCalculo === 'derecha'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Derecha (J+K)
+              </button>
+              <button
+                onClick={() => setTipoCalculo('izquierda')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  tipoCalculo === 'izquierda'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Izquierda (A+B+C+D+F+G+H)
               </button>
             </div>
           </div>

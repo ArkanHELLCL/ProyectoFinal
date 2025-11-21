@@ -18,6 +18,8 @@ const PACTO_NOMBRES = {
   I: "Partido de la Gente",
   J: "Chile Grande y Unido (UDI, RN, Evópoli, Demócratas)",
   K: "Cambio por Chile (PSC, PNL)",
+  JK: "Toda la Derecha",
+  AH: "Toda la Izquierda",
 };
 
 const PARTIDO_NOMBRES = {
@@ -71,7 +73,7 @@ const PARTIDO_NOMBRES = {
 };
 
 function Distritos() {
-  const { tipoVotos } = useVotos()
+  const { tipoVotos, tipoCalculo } = useVotos()
   const [candidatos, setCandidatos] = useState([])
   const [distritos, setDistritos] = useState([])
   const [escanos, setEscanos] = useState([])
@@ -122,6 +124,8 @@ function Distritos() {
       I: "bg-orange-300 text-orange-950",    // Partido de la Gente
       J: "bg-sky-300 text-sky-950",          // Chile Grande y Unido (centro-derecha)
       K: "bg-violet-300 text-violet-950",    // Cambio por Chile
+      JK: "bg-blue-500 text-white",          // Toda la Derecha
+      AH: "bg-red-500 text-white",           // Toda la Izquierda
     };
     return colores[codigo] || "bg-gray-100 text-gray-800";
   }
@@ -258,7 +262,12 @@ function Distritos() {
       setLoadingVotos(true)
       
       // Obtener candidatos del distrito con el tipo de votos seleccionado
-      const url = `${API_BASE_URL}/api/candidatos/${distrito}?votos=${tipoVotos}`
+      let url = `${API_BASE_URL}/api/candidatos/${distrito}?votos=${tipoVotos}`
+      if (tipoCalculo === 'izquierda') {
+        url += '&pacto_ficticio=toda_izquierda'
+      } else if (tipoCalculo === 'derecha') {
+        url += '&pacto_ficticio=toda_derecha'
+      }
       const response = await fetch(url)
       
       if (!response.ok) {

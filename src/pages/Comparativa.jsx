@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import Hemiciclo from '../components/Hemiciclo'
+import { useVotos } from '../context/VotosContext'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
@@ -30,6 +31,7 @@ const PARTIDO_NOMBRES = {
 }
 
 const Comparativa = () => {
+  const { tipoCalculo } = useVotos()
   const [candidatosEncuesta, setCandidatosEncuesta] = useState([])
   const [candidatosReales, setCandidatosReales] = useState([])
   const [loading, setLoading] = useState(true)
@@ -70,9 +72,16 @@ const Comparativa = () => {
       // Lanzar todas las llamadas de encuesta y reales entremezcladas
       for (let distrito = 1; distrito <= 28; distrito++) {
         // Encuesta
+        let urlEncuesta = `${API_BASE_URL}/api/candidatos/${distrito}?votos=encuesta`
+        if (tipoCalculo === 'izquierda') {
+          urlEncuesta += '&pacto_ficticio=toda_izquierda'
+        } else if (tipoCalculo === 'derecha') {
+          urlEncuesta += '&pacto_ficticio=toda_derecha'
+        }
+
         indicesEncuesta.push(todasLasPromesas.length)
         todasLasPromesas.push(
-          fetch(`${API_BASE_URL}/api/candidatos/${distrito}?votos=encuesta`)
+          fetch(urlEncuesta)
             .then(res => res.json())
             .then(data => {
               const electos = data.resultados?.candidatos_electos || []
@@ -89,9 +98,16 @@ const Comparativa = () => {
         )
 
         // Reales
+        let urlReales = `${API_BASE_URL}/api/candidatos/${distrito}?votos=reales`
+        if (tipoCalculo === 'izquierda') {
+          urlReales += '&pacto_ficticio=toda_izquierda'
+        } else if (tipoCalculo === 'derecha') {
+          urlReales += '&pacto_ficticio=toda_derecha'
+        }
+
         indicesReales.push(todasLasPromesas.length)
         todasLasPromesas.push(
-          fetch(`${API_BASE_URL}/api/candidatos/${distrito}?votos=reales`)
+          fetch(urlReales)
             .then(res => res.json())
             .then(data => {
               const electos = data.resultados?.candidatos_electos || []
@@ -323,6 +339,8 @@ const Comparativa = () => {
       I: "bg-orange-300 text-orange-950",    // Partido de la Gente
       J: "bg-sky-300 text-sky-950",          // Chile Grande y Unido (centro-derecha)
       K: "bg-violet-300 text-violet-950",    // Cambio por Chile
+      JK: "bg-blue-500 text-white",          // Toda la Derecha
+      AH: "bg-red-500 text-white",           // Toda la Izquierda
     }
     return colores[codigo] || "bg-gray-100 text-gray-800"
   }
@@ -361,7 +379,7 @@ const Comparativa = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center py-8 px-4">
+      <div className="min-h-screen bg-linear-to-br from-purple-50 to-indigo-100 flex items-center justify-center py-8 px-4">
         <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full">
           <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Cargando Datos Comparativos</h2>
           

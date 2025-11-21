@@ -120,6 +120,8 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
         'bg-orange-300': '#fdba74',
         'bg-sky-300': '#7dd3fc',
         'bg-violet-300': '#c4b5fd',
+        'bg-blue-500': '#3b82f6',     // JK - Toda la Derecha
+        'bg-red-500': '#ef4444',      // AH - Toda la Izquierda
         // Colores de Partidos
         'bg-red-200': '#fecaca',
         'bg-blue-200': '#bfdbfe',
@@ -170,6 +172,8 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
         'bg-orange-300': '#c2410c',
         'bg-sky-300': '#0369a1',
         'bg-violet-300': '#6d28d9',
+        'bg-blue-500': '#1e40af',     // JK - Toda la Derecha (borde)
+        'bg-red-500': '#991b1b',      // AH - Toda la Izquierda (borde)
         // Colores de borde para Partidos
         'bg-red-200': '#991b1b',
         'bg-blue-200': '#1e40af',
