@@ -60,6 +60,9 @@ const HemicicloPage = () => {
   const [distritosEnProceso, setDistritosEnProceso] = useState([]) // Para mostrar distritos procesándose en paralelo
   const [distritosCompletados, setDistritosCompletados] = useState(0)
   const [estadoDistritos, setEstadoDistritos] = useState({}) // { [id]: 'pendiente' | 'ok' | 'error' }
+  const [totalVotosNacionales, setTotalVotosNacionales] = useState(0)
+  const [votosNacionalesPorPacto, setVotosNacionalesPorPacto] = useState({})
+  const [votosNacionalesPorPartido, setVotosNacionalesPorPartido] = useState({})
 
   // Función para obtener el nombre del distrito
   const getDistritoNombre = (id) => {
@@ -76,9 +79,13 @@ const HemicicloPage = () => {
     setProgress(0)
     setDistritosCompletados(0)
     setEstadoDistritos({})
+    setTotalVotosNacionales(0)
 
     const totalDistritos = 28
     const distritosActuales = []
+    const votosTotalesPorDistrito = []
+    const acumuladoPactos = {}
+    const acumuladoPartidos = {}
 
     try {
       const todosLosElectos = []
@@ -109,6 +116,27 @@ const HemicicloPage = () => {
               todosLosElectos.push(...data.resultados.candidatos_electos)
               setEstadoDistritos(prev => ({ ...prev, [distrito]: 'ok' }))
               setCandidatosElectosCargando(prev => prev + data.resultados.candidatos_electos.length)
+
+              // Acumular votos totales reales si existen
+              if (data.votos_totales_reales) {
+                votosTotalesPorDistrito.push(data.votos_totales_reales)
+              }
+
+              // Acumular votos por pacto y partido usando todos los candidatos (electos y no electos)
+              if (data.candidatos) {
+                data.candidatos.forEach(candidato => {
+                  // Usar votos reales cantidad si estamos en modo reales o si existe
+                  const votos = candidato.votos_reales_cantidad || 0
+
+                  // Acumular por pacto
+                  const pacto = candidato.pacto || 'SIN PACTO'
+                  acumuladoPactos[pacto] = (acumuladoPactos[pacto] || 0) + votos
+
+                  // Acumular por partido
+                  const partido = candidato.partido || 'IND'
+                  acumuladoPartidos[partido] = (acumuladoPartidos[partido] || 0) + votos
+                })
+              }
             } else {
               setEstadoDistritos(prev => ({ ...prev, [distrito]: 'error' }))
             }
@@ -139,6 +167,12 @@ const HemicicloPage = () => {
       setDistritosEnProceso(distritosActuales)
 
       await Promise.all(promises)
+
+      // Calcular total nacional de votos reales
+      const totalVotos = votosTotalesPorDistrito.reduce((acc, curr) => acc + curr, 0)
+      setTotalVotosNacionales(totalVotos)
+      setVotosNacionalesPorPacto(acumuladoPactos)
+      setVotosNacionalesPorPartido(acumuladoPartidos)
 
       setCandidatosElectos(todosLosElectos)
       setProgress(100)
@@ -235,6 +269,16 @@ const HemicicloPage = () => {
     return conteo
   }
 
+  // Obtener votos por pacto
+  const getVotosPorPacto = (codigoPacto) => {
+    return votosNacionalesPorPacto[codigoPacto] || 0
+  }
+
+  // Obtener votos por partido
+  /*const getVotosPorPartido = (codigoPartido) => {
+    return votosNacionalesPorPartido[codigoPartido] || 0
+  }*/
+
   return (
     <div className="min-h-screen bg-linear-to-br from-indigo-50 to-purple-100 py-8 px-4">
       <div className="max-w-6xl mx-auto">
@@ -257,6 +301,11 @@ const HemicicloPage = () => {
               Votos de {tipoVotos === 'encuesta' ? 'Encuesta' : tipoVotos === 'reales' ? 'Reales' : 'Comparativa'}
             </span>
           </p>
+          {totalVotosNacionales > 0 && (
+            <p className="text-lg font-semibold text-indigo-600 mt-2">
+              Total Nacional de Votos Válidos: {totalVotosNacionales.toLocaleString('es-CL')}
+            </p>
+          )}
         </header>
 
         {/* Botón para cargar datos */}
@@ -297,7 +346,7 @@ const HemicicloPage = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Mostrar distritos procesándose en paralelo */}
             {distritosEnProceso.length > 0 && (
               <div className="mb-4">
@@ -306,7 +355,7 @@ const HemicicloPage = () => {
                   {distritosEnProceso.map(distrito => {
                     const estado = estadoDistritos[distrito.id]
                     return (
-                      <div 
+                      <div
                         key={distrito.id}
                         className="flex items-center gap-1 px-3 py-1 bg-indigo-50 border border-indigo-200 rounded-full text-xs"
                       >
@@ -338,10 +387,10 @@ const HemicicloPage = () => {
                 </div>
               </div>
             )}
-            
+
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <svg className="w-5 h-5 text-indigo-600 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               <span className="font-medium">{currentDistrito}</span>
             </div>
@@ -356,7 +405,7 @@ const HemicicloPage = () => {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-center gap-2 text-red-800">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
               <span className="font-medium">{error}</span>
             </div>
@@ -370,7 +419,7 @@ const HemicicloPage = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-indigo-600">
                   <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span className="font-semibold text-lg">Hemiciclo Parlamentario de Chile</span>
                 </div>
@@ -379,21 +428,19 @@ const HemicicloPage = () => {
                     <span className="text-sm text-gray-600 font-medium">Colorear por:</span>
                     <button
                       onClick={() => setColorearPor('pacto')}
-                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                        colorearPor === 'pacto'
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${colorearPor === 'pacto'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                     >
                       Pacto
                     </button>
                     <button
                       onClick={() => setColorearPor('partido')}
-                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                        colorearPor === 'partido'
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${colorearPor === 'partido'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                     >
                       Partido
                     </button>
@@ -411,6 +458,7 @@ const HemicicloPage = () => {
                 getPartidoNombre={getPartidoNombre}
                 totalEscanos={155}
                 colorearPor={colorearPor}
+                totalVotosNacionales={totalVotosNacionales}
               />
             </div>
             {/* Botón para recargar */}
@@ -433,7 +481,7 @@ const HemicicloPage = () => {
           <div className="mt-6 bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <svg className="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
               </svg>
               Distribución de Escaños por Pacto
             </h3>
@@ -449,6 +497,11 @@ const HemicicloPage = () => {
                       <div>
                         <div className="text-sm font-medium text-gray-900">{PACTO_NOMBRES[codigo] || codigo}</div>
                         <div className="text-xs text-gray-500">{((cantidad / candidatosElectos.length) * 100).toFixed(1)}%</div>
+                        {getVotosPorPacto(codigo) > 0 && (
+                          <div className="text-xs text-indigo-600 font-medium">
+                            {getVotosPorPacto(codigo).toLocaleString('es-CL')} votos
+                          </div>
+                        )}
                         <div className="text-xs text-gray-600 mt-0.5 font-medium">{getPartidosPorPacto(codigo).join(', ')}</div>
                       </div>
                     </div>
@@ -464,7 +517,7 @@ const HemicicloPage = () => {
           <div className="mt-6 bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
               </svg>
               Distribución de Escaños por Partido
             </h3>
@@ -494,32 +547,32 @@ const HemicicloPage = () => {
           <div className="mt-6 bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
+                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
               </svg>
               Leyenda de Pactos
             </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {Object.entries(PACTO_NOMBRES)
-              .filter(([codigo]) => {
-                if (tipoCalculo === 'derecha') {
-                  // Mostrar JK y ocultar J y K individuales
-                  return codigo === 'JK' || (!['J', 'K', 'AH'].includes(codigo))
-                } else if (tipoCalculo === 'izquierda') {
-                  // Mostrar AH y ocultar A, B, C, D, F, G, H individuales
-                  return codigo === 'AH' || (!['A', 'B', 'C', 'D', 'F', 'G', 'H', 'JK'].includes(codigo))
-                }
-                // Modo normal: ocultar JK y AH
-                return !['JK', 'AH'].includes(codigo)
-              })
-              .map(([codigo, nombre]) => (
-                <div key={codigo} className="flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPactoColor(codigo)}`}>
-                    {codigo}
-                  </span>
-                  <span className="text-sm text-gray-700">{nombre}</span>
-                </div>
-              ))}
-          </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {Object.entries(PACTO_NOMBRES)
+                .filter(([codigo]) => {
+                  if (tipoCalculo === 'derecha') {
+                    // Mostrar JK y ocultar J y K individuales
+                    return codigo === 'JK' || (!['J', 'K', 'AH'].includes(codigo))
+                  } else if (tipoCalculo === 'izquierda') {
+                    // Mostrar AH y ocultar A, B, C, D, F, G, H individuales
+                    return codigo === 'AH' || (!['A', 'B', 'C', 'D', 'F', 'G', 'H', 'JK'].includes(codigo))
+                  }
+                  // Modo normal: ocultar JK y AH
+                  return !['JK', 'AH'].includes(codigo)
+                })
+                .map(([codigo, nombre]) => (
+                  <div key={codigo} className="flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPactoColor(codigo)}`}>
+                      {codigo}
+                    </span>
+                    <span className="text-sm text-gray-700">{nombre}</span>
+                  </div>
+                ))}
+            </div>
           </div>
         )}
 
@@ -528,20 +581,20 @@ const HemicicloPage = () => {
           <div className="mt-6 bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
+                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
               </svg>
               Leyenda de Partidos
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {Object.entries(PARTIDO_NOMBRES).map(([codigo, nombre]) => (
-              <div key={codigo} className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPartidoColor(codigo)}`}>
-                  {codigo}
-                </span>
-                <span className="text-sm text-gray-700">{nombre}</span>
-              </div>
-            ))}
-          </div>
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {Object.entries(PARTIDO_NOMBRES).map(([codigo, nombre]) => (
+                <div key={codigo} className="flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPartidoColor(codigo)}`}>
+                    {codigo}
+                  </span>
+                  <span className="text-sm text-gray-700">{nombre}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -549,13 +602,13 @@ const HemicicloPage = () => {
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
             <div>
               <h4 className="font-semibold text-blue-800 mb-1">Información</h4>
               <p className="text-sm text-blue-700">
-                Esta visualización muestra los 155 escaños electos de la Cámara de Diputados de Chile, 
-                obtenidos desde los 28 distritos electorales. 
+                Esta visualización muestra los 155 escaños electos de la Cámara de Diputados de Chile,
+                obtenidos desde los 28 distritos electorales.
                 Pasa el cursor sobre cualquier escaño (círculo) para ver información detallada del candidato electo.
               </p>
             </div>

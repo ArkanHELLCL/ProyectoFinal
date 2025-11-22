@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEscanos = 155, colorearPor = 'pacto' }) => {
+const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEscanos = 155, colorearPor = 'pacto', totalVotosNacionales = 0 }) => {
   const [hoveredSeat, setHoveredSeat] = useState(null)
 
   // Configuración del hemiciclo
@@ -16,7 +16,7 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
     // Agrupar candidatos según el criterio seleccionado (pacto o partido)
     const candidatosPorGrupo = {}
     candidatosElectos.forEach((candidato, index) => {
-      const grupo = colorearPor === 'pacto' 
+      const grupo = colorearPor === 'pacto'
         ? (candidato.pacto || 'SIN_PACTO')
         : (candidato.partido || 'SIN_PARTIDO')
       if (!candidatosPorGrupo[grupo]) {
@@ -24,38 +24,38 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
       }
       candidatosPorGrupo[grupo].push(index)
     })
-    
+
     // Ordenar grupos por cantidad de escaños (de mayor a menor) para mejor visualización
     const gruposOrdenados = Object.entries(candidatosPorGrupo)
       .sort((a, b) => b[1].length - a[1].length)
-    
+
     // Calcular todas las posiciones físicas del hemiciclo (siempre 155)
     const physicalPositions = []
     const seatsPerRow = [16, 22, 26, 30, 33, 28]
-    
+
     for (let row = 0; row < rows; row++) {
       const radius = startRadius + (row * radiusIncrement)
       const seatsInThisRow = seatsPerRow[row] || 20
-      
+
       // Calcular el ángulo de apertura basado en la fila (más cerrado en las externas)
       const arcReduction = (row * 0.06) // Reducción progresiva del arco
       const arcAngle = Math.PI - arcReduction // Ángulo total disponible
       const angleStep = arcAngle / (seatsInThisRow + 1)
       const startAngle = (Math.PI - arcAngle) / 2 // Centrar el arco
-      
+
       for (let i = 0; i < seatsInThisRow; i++) {
         if (physicalPositions.length >= totalEscanos) break
-        
+
         const angle = Math.PI - startAngle - (angleStep * (i + 1))
         const x = centerX + radius * Math.cos(angle)
         const y = centerY - radius * Math.sin(angle)
-        
+
         physicalPositions.push({ x, y, row, angle })
       }
-      
+
       if (physicalPositions.length >= totalEscanos) break
     }
-    
+
     // Ordenar posiciones por ángulo (izquierda a derecha) y fila (afuera a dentro)
     physicalPositions.sort((a, b) => {
       const angleDiff = b.angle - a.angle
@@ -64,11 +64,11 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
       }
       return b.row - a.row
     })
-    
+
     // Asignar posiciones a candidatos agrupados
     const positions = []
     let posIndex = 0
-    
+
     gruposOrdenados.forEach(([, candidatosIndices]) => {
       candidatosIndices.forEach(candidatoIndex => {
         if (posIndex < physicalPositions.length) {
@@ -82,7 +82,7 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
         }
       })
     })
-    
+
     // Agregar posiciones vacías para completar los 155 escaños
     while (posIndex < physicalPositions.length) {
       positions.push({
@@ -93,7 +93,7 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
       })
       posIndex++
     }
-    
+
     return positions
   }
 
@@ -105,7 +105,7 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
       const candidato = candidatosElectos[pos.index]
       const codigo = colorearPor === 'pacto' ? candidato.pacto : candidato.partido
       const colorClasses = getPactoColor(codigo)
-      
+
       // Extraer el color de fondo de la clase de Tailwind
       const colorMap = {
         // Colores de Pactos
@@ -140,7 +140,7 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
         'bg-amber-300': '#fcd34d',
         'bg-rose-300': '#fda4af',
       }
-      
+
       // Buscar el color en colorClasses
       for (const [className, color] of Object.entries(colorMap)) {
         if (colorClasses.includes(className)) {
@@ -148,7 +148,7 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
         }
       }
     }
-    
+
     return '#1f2937' // Gris oscuro casi negro para escaños vacíos
   }
 
@@ -158,7 +158,7 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
       const candidato = candidatosElectos[pos.index]
       const codigo = colorearPor === 'pacto' ? candidato.pacto : candidato.partido
       const colorClasses = getPactoColor(codigo)
-      
+
       const strokeColorMap = {
         // Colores de borde para Pactos
         'bg-lime-200': '#4d7c0f',
@@ -192,14 +192,14 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
         'bg-amber-300': '#b45309',
         'bg-rose-300': '#be123c',
       }
-      
+
       for (const [className, color] of Object.entries(strokeColorMap)) {
         if (colorClasses.includes(className)) {
           return color
         }
       }
     }
-    
+
     return '#374151' // Gris medio oscuro para borde de escaños vacíos
   }
 
@@ -238,7 +238,7 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
         {/* Dibujar los escaños */}
         {seatPositions.map((pos) => {
           const isHovered = hoveredSeat === pos.index
-          
+
           return (
             <g key={`seat-${pos.index}`}>
               <circle
@@ -283,9 +283,9 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
       {hoveredSeat !== null && (() => {
         const hoveredPos = seatPositions.find(p => p.index === hoveredSeat)
         const candidateInfo = hoveredPos ? getCandidateInfo(hoveredPos) : null
-        
+
         if (!hoveredPos) return null
-        
+
         // Tooltip para escaños vacíos
         if (!hoveredPos.hasCandidate) {
           return (
@@ -302,7 +302,7 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
                 <div className="text-gray-400 mt-1">Sin diputado electo</div>
               </div>
               {/* Flecha del tooltip */}
-              <div 
+              <div
                 className="absolute -left-2 top-1/2 transform -translate-y-1/2"
                 style={{
                   width: 0,
@@ -315,7 +315,7 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
             </div>
           )
         }
-        
+
         // Tooltip para escaños con candidato
         return candidateInfo && (
           <div
@@ -328,7 +328,7 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
           >
             <div className="flex items-start gap-3">
               {candidateInfo.id_foto && (
-                <img 
+                <img
                   src={`https://static.emol.cl/emol50/especiales/img/2025/elecciones/dip/${candidateInfo.id_foto}.jpg`}
                   alt={candidateInfo.nombre}
                   className="w-20 h-20 rounded-lg object-cover border-2 border-gray-600"
@@ -346,11 +346,26 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
                   <div className="mt-1">
                     Escaño #{hoveredSeat + 1}
                   </div>
+                  {candidateInfo.votos_reales_cantidad > 0 && totalVotosNacionales > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-700">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-lg font-bold text-indigo-400">
+                          {((candidateInfo.votos_reales_cantidad / totalVotosNacionales) * 100).toFixed(2)}%
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          del total nacional
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {candidateInfo.votos_reales_cantidad.toLocaleString('es-CL')} votos
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
             {/* Flecha del tooltip */}
-            <div 
+            <div
               className="absolute -left-2 top-1/2 transform -translate-y-1/2"
               style={{
                 width: 0,

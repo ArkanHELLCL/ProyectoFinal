@@ -25,11 +25,11 @@ const PACTO_NOMBRES = {
 const PARTIDO_NOMBRES = {
   // Pacto A
   PEV: "Partido Ecologista Verde",
-  
+
   // Pacto B
   FRVS: "Federación Regionalista Verde Social",
   AH: "Acción Humanista",
-  
+
   // Pacto C - Unidad por Chile
   FA: "Frente Amplio",
   PS: "Partido Socialista",
@@ -38,36 +38,36 @@ const PARTIDO_NOMBRES = {
   PPD: "Partido Por la Democracia",
   PL: "Partido Liberal",
   PR: "Partido Radical",
-  
+
   // Pacto D
   PH: "Partido Humanista",
-  
+
   // Pacto E
   AMR: "Amarillos por Chile",
-  
+
   // Pacto F
   PTR: "Partido de Trabajadores Revolucionarios",
-  
+
   // Pacto G
   AVP: "Alianza Verde Popular",
-  
+
   // Pacto H
   POP: "Partido Popular",
-  
+
   // Pacto I
   PDG: "Partido de la Gente",
-  
+
   // Pacto J - Chile Grande y Unido
   UDI: "Unión Demócrata Independiente",
   RN: "Renovación Nacional",
   EVOP: "Evópoli",
   DEM: "Demócratas",
-  
+
   // Pacto K - Cambio por Chile
   PSC: "Partido Social Cristiano",
   PNL: "Partido Nacional Libertario",
   REP: "Partido Republicano",
-  
+
   // Independientes
   IND: "Independiente",
 };
@@ -78,14 +78,16 @@ function Distritos() {
   const [distritos, setDistritos] = useState([])
   const [escanos, setEscanos] = useState([])
   const [selectedDistrito, setSelectedDistrito] = useState('')
-  const [mostrarSoloConVotos, setMostrarSoloConVotos] = useState(true)
   const [votosAcumulados, setVotosAcumulados] = useState([])
   const [partidosAcumulados, setPartidosAcumulados] = useState([])
   const [candidatosElectos, setCandidatosElectos] = useState([])
   const [pactoExpandido, setPactoExpandido] = useState(null)
+  const [partidoExpandido, setPartidoExpandido] = useState(null)
+  const [votosTotalesReales, setVotosTotalesReales] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadingVotos, setLoadingVotos] = useState(false)
   const [error, setError] = useState(null)
+  const [tipoTabla, setTipoTabla] = useState('pacto') // 'pacto' o 'partido'
 
   // Función para obtener el nombre completo del distrito
   const getDistritoNombre = (id) => {
@@ -130,54 +132,38 @@ function Distritos() {
     return colores[codigo] || "bg-gray-100 text-gray-800";
   }
 
-  // Función para verificar si un candidato tiene votos
-  const tieneVotos = (candidato) => {
-    return (candidato.votos_reales && candidato.votos_reales > 0) || 
-           (candidato.votos_encuesta && candidato.votos_encuesta > 0)
-  }
-
-  // Función para obtener candidatos filtrados
+  // Función para obtener candidatos del distrito seleccionado
   const getCandidatosFiltrados = () => {
-    // Los candidatos ya vienen filtrados por distrito desde la API
-    let candidatosDis = candidatos
-    
-    if (mostrarSoloConVotos) {
-      candidatosDis = candidatosDis.filter(tieneVotos)
-    }
-    
-    return candidatosDis
+    if (!selectedDistrito) return []
+    return candidatos
   }
 
   // Función para obtener votos acumulados por lista del distrito seleccionado
   const getListasDistrito = () => {
     if (!selectedDistrito || !votosAcumulados.length) return []
-    
-    let filtrados = votosAcumulados
-    
-    if (mostrarSoloConVotos) {
-      filtrados = votosAcumulados.filter(lista => {
-        return (lista.votos_reales && lista.votos_reales > 0) || 
-               (lista.votos_encuesta && lista.votos_encuesta > 0)
-      })
-    }
-    
-    return filtrados
+
+    // Ordenar por votos descendente
+    return votosAcumulados.sort((a, b) => {
+      const votosA = a.votos_reales || a.votos_encuesta || 0
+      const votosB = b.votos_reales || b.votos_encuesta || 0
+      return votosB - votosA
+    })
   }
 
   // Función para obtener votos acumulados por partido del distrito seleccionado
   const getPartidosDistrito = () => {
     if (!selectedDistrito || !partidosAcumulados.length) return []
-    
-    let filtrados = partidosAcumulados
-    
-    if (mostrarSoloConVotos) {
-      filtrados = partidosAcumulados.filter(partido => {
-        return (partido.votos_reales && partido.votos_reales > 0) || 
-               (partido.votos_encuesta && partido.votos_encuesta > 0)
-      })
-    }
-    
-    return filtrados
+
+    // Ordenar partidos por votos totales (suma de votos de candidatos) descendente
+    return [...partidosAcumulados].sort((a, b) => {
+      const candidatosA = candidatos.filter(c => c.partido === a.codigo)
+      const candidatosB = candidatos.filter(c => c.partido === b.codigo)
+
+      const votosA = candidatosA.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
+      const votosB = candidatosB.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
+
+      return votosB - votosA
+    })
   }
 
   // Función para expandir/colapsar la tabla de candidatos electos de un pacto
@@ -186,10 +172,16 @@ function Distritos() {
     setPactoExpandido(nuevoValor)
   }
 
+  // Función para expandir/colapsar la tabla de candidatos de un partido
+  const togglePartido = (codigoPartido) => {
+    const nuevoValor = partidoExpandido === codigoPartido ? null : codigoPartido
+    setPartidoExpandido(nuevoValor)
+  }
+
   // Función para calcular mujeres electas por partido
   const getMujeresElectasPorPartido = (codigoPartido) => {
     if (!Array.isArray(candidatosElectos)) return 0
-    const mujeres = candidatosElectos.filter(candidato => 
+    const mujeres = candidatosElectos.filter(candidato =>
       candidato.partido === codigoPartido && candidato.sexo === 'M'
     )
     return mujeres.length
@@ -199,27 +191,21 @@ function Distritos() {
   const getAporteTotalPorPartido = (codigoPartido) => {
     if (!Array.isArray(candidatosElectos)) return 0
     const mujeres = candidatosElectos.filter(candidato => candidato.partido === codigoPartido && candidato.sexo === 'M')
-    const total = mujeres.reduce((total, candidato) => {
-      return total + (candidato.aporte_electo || 0)
-    }, 0)
-    return total
+    return mujeres.length * 500
   }
 
   // Función para calcular aporte total por pacto (suma de aporte_electo de mujeres del pacto)
   const getAporteTotalPorPacto = (codigoPacto) => {
     if (!Array.isArray(candidatosElectos)) return 0
     const mujeres = candidatosElectos.filter(candidato => candidato.pacto === codigoPacto && candidato.sexo === 'M')
-    const total = mujeres.reduce((total, candidato) => {
-      return total + (candidato.aporte_electo || 0)
-    }, 0)
-    return total
+    return mujeres.length * 500
   }
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-        
+
         // Crear lista de distritos del 1 al 28
         const distritosConNombres = Array.from({ length: 28 }, (_, i) => {
           const id = (i + 1).toString()
@@ -228,7 +214,7 @@ function Distritos() {
             nombre: getDistritoNombre(id)
           }
         })
-        
+
         setDistritos(distritosConNombres)
         setLoading(false)
       } catch (err) {
@@ -243,14 +229,14 @@ function Distritos() {
   const handleDistritoChange = (e) => {
     const distrito = e.target.value
     setSelectedDistrito(distrito)
-    
+
     // Limpiar datos inmediatamente
     setCandidatos([])
     setCandidatosElectos([])
     setVotosAcumulados([])
     setPartidosAcumulados([])
     setPactoExpandido(null)
-    
+
     // Obtener candidatos del distrito seleccionado
     if (distrito) {
       fetchCandidatosDistrito(distrito)
@@ -260,7 +246,7 @@ function Distritos() {
   const fetchCandidatosDistrito = async (distrito) => {
     try {
       setLoadingVotos(true)
-      
+
       // Obtener candidatos del distrito con el tipo de votos seleccionado
       let url = `${API_BASE_URL}/api/candidatos/${distrito}?votos=${tipoVotos}`
       if (tipoCalculo === 'izquierda') {
@@ -269,28 +255,32 @@ function Distritos() {
         url += '&pacto_ficticio=toda_derecha'
       }
       const response = await fetch(url)
-      
+
       if (!response.ok) {
         throw new Error('Error al obtener los candidatos del distrito')
       }
-      
+
       const data = await response.json()
       console.log('Respuesta API candidatos:', data)
-      
+
       // Extraer candidatos
       const candidatosDistrito = data.candidatos || []
-      
+
       // Extraer candidatos electos (están dentro de resultados.candidatos_electos)
       let electos = []
       if (data.resultados && data.resultados.candidatos_electos) {
         electos = data.resultados.candidatos_electos
       }
-      
+
       // Extraer listas y partidos desde acumulado
       const acumulado = data.acumulado || {}
       const listas = acumulado.listas || []
       const partidos = acumulado.partidos || []
-      
+
+      // Extraer votos_totales_reales si está disponible
+      const votosTotales = data.votos_totales_reales || null
+      setVotosTotalesReales(votosTotales)
+
       // Obtener información de escaños del distrito
       try {
         const escanosResponse = await fetch(`${API_BASE_URL}/api/escanos/${distrito}`)
@@ -304,7 +294,7 @@ function Distritos() {
       } catch (escanosError) {
         console.error('Error en fetch de escaños:', escanosError)
       }
-      
+
       setCandidatos(candidatosDistrito)
       setCandidatosElectos(electos)
       setVotosAcumulados(listas)
@@ -397,20 +387,32 @@ function Distritos() {
             </div>
           </div>
 
-          {/* Checkbox para filtrar candidatos con votos */}
-          <div className="mt-4">
-            <label className="inline-flex items-center">
-              <input
-                type="checkbox"
-                checked={mostrarSoloConVotos}
-                onChange={(e) => setMostrarSoloConVotos(e.target.checked)}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-              />
-              <span className="ml-2 text-sm font-medium text-gray-700">
-                Mostrar solo candidatos con votos
-              </span>
-            </label>
-          </div>
+          {/* Selector de tipo de tabla */}
+          {selectedDistrito && (
+            <div className="mt-4 inline-flex items-center gap-3 bg-white rounded-lg shadow-md px-6 py-3">
+              <span className="text-sm font-medium text-gray-700">Tipo de Tabla:</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setTipoTabla('pacto')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${tipoTabla === 'pacto'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                >
+                  Por Pacto
+                </button>
+                <button
+                  onClick={() => setTipoTabla('partido')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${tipoTabla === 'partido'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                >
+                  Por Partido
+                </button>
+              </div>
+            </div>
+          )}
 
           {selectedDistrito && (
             <div className="mt-6">
@@ -425,10 +427,10 @@ function Distritos() {
                 </h3>
                 <div className="text-sm text-gray-600">
                   Candidatos en este distrito: {getCandidatosFiltrados().length}
-                  {mostrarSoloConVotos && candidatos.length > getCandidatosFiltrados().length && (
-                    <span className="text-gray-500 ml-1">
-                      (con votos de {candidatos.length} total)
-                    </span>
+                  {tipoVotos === 'reales' && votosTotalesReales !== null && (
+                    <div className="mt-1 text-gray-700 font-medium">
+                      Votos totales reales: {votosTotalesReales.toLocaleString('es-CL')}
+                    </div>
                   )}
                 </div>
                 {(() => {
@@ -439,7 +441,7 @@ function Distritos() {
                       <div className="mt-3 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
                         <div className="flex items-center">
                           <svg className="w-5 h-5 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                           </svg>
                           <div className="text-sm">
                             <span className="font-semibold text-yellow-800">Advertencia:</span>
@@ -455,338 +457,276 @@ function Distritos() {
                 })()}
               </div>
 
-              {/* Tabla de Candidatos */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                  <div className="flex items-center">
-                    <div className="flex items-center text-purple-600 mr-3">
-                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
-                      </svg>
-                      <span className="font-medium">Candidatos cargados</span>
-                    </div>
-                    <span className="text-gray-500">
-                      Total: {getCandidatosFiltrados().length}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Nombre
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Partido
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Pacto
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Votos
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {getCandidatosFiltrados()
-                        .map((candidato, index) => {
-                          // Función para obtener el color de fondo según el partido
-                          const getPartidoColor = (partido) => {
-                            const colores = {
-                              'FA': 'bg-red-100',
-                              'RN': 'bg-blue-100', 
-                              'PC': 'bg-red-200',
-                              'UDI': 'bg-blue-200',
-                              'REP': 'bg-cyan-200',
-                              'PPD': 'bg-red-100',
-                              'PNL': 'bg-yellow-200',
-                              'PS': 'bg-red-100',
-                              'DC': 'bg-purple-100',
-                              'PR': 'bg-lime-200',
-                              'IND': 'bg-slate-200',
-                              'EVOP': 'bg-indigo-100',
-                              'PL': 'bg-pink-100',
-                              'FRVS': 'bg-green-100',
-                              'AH': 'bg-teal-100',
-                              'PDG': 'bg-orange-100'
-                            };
-                            return colores[partido] || 'bg-gray-100';
-                          };
 
-                          return (
-                            <tr key={index} className={`${getPartidoColor(candidato.partido)} hover:bg-opacity-75 transition-colors duration-150`}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                <div className="flex items-center gap-3">
-                                  {candidato.id_foto && (
-                                    <img 
-                                      src={`https://static.emol.cl/emol50/especiales/img/2025/elecciones/dip/${candidato.id_foto}.jpg`}
-                                      alt={candidato.nombre}
-                                      className="w-14 h-14 rounded-full object-cover border-2 border-gray-300"
-                                      onError={(e) => {
-                                        e.target.style.display = 'none'
-                                      }}
-                                    />
-                                  )}
-                                  <span>{candidato.nombre}</span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                {candidato.partido}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-gray-700">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPactoColor(candidato.pacto)}`}>
-                                  {getPactoNombre(candidato.pacto)}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {(() => {
-                                  const porcentaje = candidato.votos_encuesta || 0
-                                  return (
-                                    <div className="flex items-center gap-2">
-                                      <div className="bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner" style={{ minWidth: '200px', width: '200px' }}>
-                                        <div 
-                                          className="h-full bg-indigo-600 rounded-full transition-all duration-300 shadow-sm"
-                                          style={{ width: `${porcentaje}%` }}
-                                        />
-                                      </div>
-                                      <span className="font-medium text-xs min-w-[45px] text-right">
-                                        {porcentaje}%
-                                      </span>
-                                    </div>
-                                  )
-                                })()}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
 
-              {/* Tabla de Votos Acumulados por Partido */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden mt-8 max-w-full lg:max-w-6xl xl:max-w-7xl">
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                  <div className="flex items-center">
-                    <div className="flex items-center text-green-600 mr-3">
-                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd"/>
-                      </svg>
-                      <span className="font-medium">Votos Acumulados por Pacto</span>
-                    </div>
-                    <span className="text-gray-500">
-                      Total Pactos: {getListasDistrito().length}
-                    </span>
-                  </div>
-                </div>
-                
-                {loadingVotos ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-                      <p className="text-gray-600">Cargando votos acumulados...</p>
+              {/* Tabla de Votos Acumulados por Pacto */}
+              {tipoTabla === 'pacto' && (
+                <div className="bg-white rounded-lg shadow-md overflow-hidden mt-8 max-w-full lg:max-w-6xl xl:max-w-7xl">
+                  <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                    <div className="flex items-center">
+                      <div className="flex items-center text-green-600 mr-3">
+                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd" />
+                        </svg>
+                        <span className="font-medium">Votos Acumulados por Pacto</span>
+                      </div>
+                      <span className="text-gray-500">
+                        Total Pactos: {getListasDistrito().length}
+                      </span>
                     </div>
                   </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Código
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Pacto
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            <div className="flex items-center gap-1">
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
-                              </svg>
-                              Total Aporte (UF)
-                            </div>
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Votos
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {getListasDistrito().map((lista, index) => {
-                          const electosPacto = Array.isArray(candidatosElectos) 
-                            ? candidatosElectos.filter(candidato => candidato.pacto === lista.codigo) 
-                            : []
-                          const isExpanded = pactoExpandido === lista.codigo
-                          const tieneElectos = electosPacto.length > 0
-                          
-                          return (
-                            <React.Fragment key={`pacto-${index}`}>
-                              <tr 
-                                className={`transition-all duration-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} ${tieneElectos ? 'hover:bg-blue-50 cursor-pointer' : 'hover:bg-gray-50'}`}
-                                onClick={() => {
-                                  if (tieneElectos) {
-                                    togglePacto(lista.codigo)
-                                  }
-                                }}
-                              >
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="flex items-center gap-3">
-                                    {tieneElectos && (
-                                      <button
-                                        className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors shadow-sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          togglePacto(lista.codigo)
-                                        }}
-                                      >
-                                        <svg 
-                                          className={`w-5 h-5 text-blue-600 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24"
+
+                  {loadingVotos ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                        <p className="text-gray-600">Cargando votos acumulados...</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Código
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Pacto
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <div className="flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                                </svg>
+                                Total Aporte (UF)
+                              </div>
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Votos
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {getListasDistrito().map((lista, index) => {
+                            // Obtener todos los candidatos del pacto
+                            const candidatosPacto = candidatos.filter(candidato => candidato.pacto === lista.codigo)
+
+                            // Identificar electos
+                            const electosPacto = Array.isArray(candidatosElectos)
+                              ? candidatosElectos.filter(candidato => candidato.pacto === lista.codigo)
+                              : []
+
+                            // Ordenar: Estrictamente por votos descendente
+                            candidatosPacto.sort((a, b) => {
+                              return (b.votos_reales_cantidad || 0) - (a.votos_reales_cantidad || 0)
+                            })
+
+                            // Calcular votos totales del pacto sumando los candidatos
+                            const totalVotosPacto = candidatosPacto.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
+
+                            const isExpanded = pactoExpandido === lista.codigo
+                            const tieneCandidatos = candidatosPacto.length > 0
+                            const tieneElectos = electosPacto.length > 0
+
+                            return (
+                              <React.Fragment key={`pacto-${index}`}>
+                                <tr
+                                  className={`transition-all duration-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} ${tieneCandidatos ? 'hover:bg-blue-50 cursor-pointer' : 'hover:bg-gray-50'}`}
+                                  onClick={() => {
+                                    if (tieneCandidatos) {
+                                      togglePacto(lista.codigo)
+                                    }
+                                  }}
+                                >
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center gap-3">
+                                      {tieneCandidatos && (
+                                        <button
+                                          className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors shadow-sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            togglePacto(lista.codigo)
+                                          }}
                                         >
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                      </button>
-                                    )}
-                                    <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm bg-linear-to-r from-blue-400 to-blue-600 text-white ${getPactoColor(lista.codigo)}`}>
-                                      {lista.codigo}
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                  <div className="flex items-center gap-2">
-                                    <div className="text-sm font-medium text-gray-900">
-                                      {getPactoNombre(lista.codigo)}
-                                    </div>
-                                    {tieneElectos && (
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 animate-pulse">
-                                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                        </svg>
-                                        {electosPacto.length} electo{electosPacto.length !== 1 ? 's' : ''}
+                                          <svg
+                                            className={`w-5 h-5 text-blue-600 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                          </svg>
+                                        </button>
+                                      )}
+                                      <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${getPactoColor(lista.codigo)}`}>
+                                        {lista.codigo}
                                       </span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                  {(() => {
-                                    const aporteTotal = getAporteTotalPorPacto(lista.codigo)
-                                    return aporteTotal > 0 ? (
-                                      <div className="inline-flex items-center gap-2 px-3 py-2 bg-green-50 border-2 border-green-200 rounded-lg shadow-sm">
-                                        <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                          <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
-                                        </svg>
-                                        <span className="font-semibold text-green-700 text-lg">{aporteTotal.toFixed(2)} UF</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {getPactoNombre(lista.codigo)}
                                       </div>
-                                    ) : (
-                                      <span className="text-gray-400">0 UF</span>
-                                    )
-                                  })()}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {(() => {
-                                    const porcentaje = lista.votos_encuesta || 0
-                                    return (
-                                      <div className="flex items-center gap-2">
-                                        <div className="bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner" style={{ minWidth: '200px', width: '200px' }}>
-                                          <div 
-                                            className="h-full bg-green-600 rounded-full transition-all duration-300 shadow-sm"
-                                            style={{ width: `${porcentaje}%` }}
-                                          />
-                                        </div>
-                                        <span className="font-medium text-xs min-w-[45px] text-right">
-                                          {porcentaje}%
+                                      {tieneElectos && (
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 animate-pulse">
+                                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                          </svg>
+                                          {electosPacto.length} electo{electosPacto.length !== 1 ? 's' : ''}
                                         </span>
-                                      </div>
-                                    )
-                                  })()}
-                                </td>
-                              </tr>
-                              
-                              {/* Fila expandible con candidatos electos */}
-                              {tieneElectos && (
-                                <tr className={`transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 h-0'}`}>
-                                  <td colSpan="4" className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'px-6 py-4' : 'px-6 py-0'}`}>
-                                    <div className={`bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg transition-all duration-300 ${isExpanded ? 'p-4 border-2 border-blue-200' : 'p-0'}`}>
-                                      {isExpanded && (
-                                        <div className="animate-in fade-in duration-300">
-                                          <div className="flex items-center gap-2 mb-4">
-                                            <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                                            </svg>
-                                            <h4 className="text-base font-bold text-blue-800">
-                                              Candidatos Electos - Pacto {getPactoNombre(lista.codigo)}
-                                            </h4>
-                                            <span className="ml-auto text-sm font-semibold text-blue-600">
-                                              {electosPacto.length} escaño{electosPacto.length !== 1 ? 's' : ''}
-                                            </span>
-                                          </div>
-                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            {electosPacto.map((candidato, idx) => (
-                                              <div 
-                                                key={idx} 
-                                                className="flex items-center justify-between bg-white p-4 rounded-lg shadow-md border-l-4 border-green-500 hover:shadow-lg transition-shadow duration-200"
-                                              >
-                                                <div className="flex items-center gap-3 flex-1">
-                                                  {candidato.id_foto && (
-                                                    <img 
-                                                      src={`https://static.emol.cl/emol50/especiales/img/2025/elecciones/dip/${candidato.id_foto}.jpg`}
-                                                      alt={candidato.nombre}
-                                                      className="w-16 h-16 rounded-full object-cover border-2 border-green-500 shadow-sm"
-                                                      onError={(e) => {
-                                                        e.target.style.display = 'none'
-                                                      }}
-                                                    />
-                                                  )}
-                                                  <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                      <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                      </svg>
-                                                      <div className="font-bold text-gray-900">{candidato.nombre}</div>
-                                                    </div>
-                                                    <div className="text-xs text-gray-600 ml-6">
-                                                      <span className="font-semibold">{getPartidoNombre(candidato.partido)}</span>
-                                                      {candidato.cupo && <span> • Cupo: {candidato.cupo}</span>}
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                  <span className="px-3 py-1 text-xs font-bold text-white bg-green-600 rounded-full">
-                                                    ELECTO
-                                                  </span>
-                                                </div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </div>
                                       )}
                                     </div>
                                   </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                    {(() => {
+                                      const aporteTotal = getAporteTotalPorPacto(lista.codigo)
+                                      return aporteTotal > 0 ? (
+                                        <div className="inline-flex items-center gap-2 px-3 py-2 bg-green-50 border-2 border-green-200 rounded-lg shadow-sm">
+                                          <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                                          </svg>
+                                          <span className="font-semibold text-green-700 text-lg">{aporteTotal.toFixed(2)} UF</span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-gray-400">0 UF</span>
+                                      )
+                                    })()}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {(() => {
+                                      const porcentaje = lista.votos_encuesta || 0
+                                      return (
+                                        <div className="flex flex-col gap-1">
+                                          <div className="flex items-center gap-2">
+                                            <div className="bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner" style={{ minWidth: '200px', width: '200px' }}>
+                                              <div
+                                                className="h-full bg-green-600 rounded-full transition-all duration-300 shadow-sm"
+                                                style={{ width: `${porcentaje}%` }}
+                                              />
+                                            </div>
+                                            <span className="font-medium text-xs min-w-[45px] text-right">
+                                              {porcentaje}%
+                                            </span>
+                                          </div>
+                                          {totalVotosPacto > 0 && (
+                                            <div className="text-xs text-gray-600 font-medium text-right">
+                                              {totalVotosPacto.toLocaleString('es-CL')} votos
+                                            </div>
+                                          )}
+                                        </div>
+                                      )
+                                    })()}
+                                  </td>
                                 </tr>
-                              )}
-                            </React.Fragment>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
+
+                                {/* Fila expandible con TODOS los candidatos del pacto */}
+                                {tieneCandidatos && (
+                                  <tr className={`transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 h-0'}`}>
+                                    <td colSpan="4" className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'px-6 py-4' : 'px-6 py-0'}`}>
+                                      <div className={`bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg transition-all duration-300 ${isExpanded ? 'p-4 border-2 border-blue-200' : 'p-0'}`}>
+                                        {isExpanded && (
+                                          <div className="animate-in fade-in duration-300">
+                                            <div className="flex items-center gap-2 mb-4">
+                                              <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                              </svg>
+                                              <h4 className="text-base font-bold text-blue-800">
+                                                Candidatos del Pacto {getPactoNombre(lista.codigo)}
+                                              </h4>
+                                              <span className="ml-auto text-sm font-semibold text-blue-600">
+                                                {candidatosPacto.length} candidato{candidatosPacto.length !== 1 ? 's' : ''}
+                                              </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                              {candidatosPacto.map((candidato, idx) => {
+                                                const esElecto = electosPacto.some(e => e.nombre === candidato.nombre)
+
+                                                return (
+                                                  <div
+                                                    key={idx}
+                                                    className={`flex items-center justify-between bg-white p-4 rounded-lg shadow-md border-l-4 hover:shadow-lg transition-shadow duration-200 ${esElecto ? 'border-green-500' : 'border-red-500'}`}
+                                                  >
+                                                    <div className="flex items-center gap-3 flex-1">
+                                                      {candidato.id_foto && (
+                                                        <img
+                                                          src={`https://static.emol.cl/emol50/especiales/img/2025/elecciones/dip/${candidato.id_foto}.jpg`}
+                                                          alt={candidato.nombre}
+                                                          className={`w-16 h-16 rounded-full object-cover border-2 shadow-sm ${esElecto ? 'border-green-500' : 'border-red-500'}`}
+                                                          onError={(e) => {
+                                                            e.target.style.display = 'none'
+                                                          }}
+                                                        />
+                                                      )}
+                                                      <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                          <svg className={`w-4 h-4 ${esElecto ? 'text-green-600' : 'text-red-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                          </svg>
+                                                          <div className="font-bold text-gray-900">{candidato.nombre}</div>
+                                                        </div>
+                                                        <div className="text-xs text-gray-600 ml-6">
+                                                          <span className="font-semibold">{getPartidoNombre(candidato.partido)}</span>
+                                                          {candidato.cupo && <span> • Cupo: {candidato.cupo}</span>}
+
+                                                          {/* Porcentaje y Votos */}
+                                                          <div className="mt-2">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                              <div className="flex-1 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                                                <div
+                                                                  className={`h-full rounded-full ${esElecto ? 'bg-green-500' : 'bg-gray-400'}`}
+                                                                  style={{ width: `${candidato.votos_encuesta || 0}%` }}
+                                                                />
+                                                              </div>
+                                                              <span className="text-xs font-bold text-gray-700">
+                                                                {candidato.votos_encuesta || 0}%
+                                                              </span>
+                                                            </div>
+                                                            {candidato.votos_reales_cantidad > 0 && (
+                                                              <div className="font-medium text-indigo-600">
+                                                                {candidato.votos_reales_cantidad.toLocaleString('es-CL')} votos
+                                                              </div>
+                                                            )}
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                      <span className={`px-3 py-1 text-xs font-bold text-white rounded-full ${esElecto ? 'bg-green-600' : 'bg-red-600'}`}>
+                                                        {esElecto ? 'ELECTO' : 'NO ELECTO'}
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                )
+                                              })}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Tabla de Partidos Acumulados */}
-              {(loadingVotos || getPartidosDistrito().length > 0) && (
+              {tipoTabla === 'partido' && (loadingVotos || getPartidosDistrito().length > 0) && (
                 <div className="bg-white rounded-lg shadow-md overflow-hidden mt-6">
                   <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
                     <div className="flex items-center">
                       <div className="flex items-center text-blue-600 mr-3">
                         <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" clipRule="evenodd"/>
+                          <path fillRule="evenodd" d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" clipRule="evenodd" />
                         </svg>
                         <span className="font-medium">Votos Acumulados por Partido</span>
                       </div>
@@ -795,7 +735,7 @@ function Distritos() {
                       </span>
                     </div>
                   </div>
-                  
+
                   {loadingVotos ? (
                     <div className="flex items-center justify-center py-12">
                       <div className="text-center">
@@ -823,8 +763,8 @@ function Distritos() {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               <div className="flex items-center gap-1">
                                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
+                                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
                                 </svg>
                                 Total Aporte (UF)
                               </div>
@@ -838,72 +778,225 @@ function Distritos() {
                           {getPartidosDistrito().map((partido, index) => {
                             const mujeresElectas = getMujeresElectasPorPartido(partido.codigo)
                             const aporteTotal = getAporteTotalPorPartido(partido.codigo)
-                            
+
+                            // Obtener todos los candidatos del partido
+                            const candidatosPartido = candidatos.filter(candidato => candidato.partido === partido.codigo)
+
+                            // Identificar electos
+                            const electosPartido = Array.isArray(candidatosElectos)
+                              ? candidatosElectos.filter(candidato => candidato.partido === partido.codigo)
+                              : []
+
+                            // Ordenar: Estrictamente por votos descendente
+                            candidatosPartido.sort((a, b) => {
+                              return (b.votos_reales_cantidad || 0) - (a.votos_reales_cantidad || 0)
+                            })
+
+                            // Calcular votos totales del partido sumando los candidatos
+                            const totalVotosPartido = candidatosPartido.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
+
+                            const isExpanded = partidoExpandido === partido.codigo
+                            const tieneCandidatos = candidatosPartido.length > 0
+                            const tieneElectos = electosPartido.length > 0
+
                             return (
-                              <tr key={index} className={`hover:bg-blue-50 transition-all duration-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-linear-to-br from-blue-500 to-blue-600 shadow-md">
-                                    <span className="text-sm font-bold text-white">{partido.codigo}</span>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                  <div className="text-sm font-semibold text-gray-900">
-                                    {getPartidoNombre(partido.codigo)}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                  <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${getPactoColor(partido.pacto)}`}>
-                                    {getPactoNombre(partido.pacto)}
-                                  </span>
-                                </td>
-                                <td className="px-3 py-4 whitespace-nowrap">
-                                  {mujeresElectas > 0 ? (
-                                    <div className="flex items-center gap-1 bg-pink-50 px-2 py-1.5 rounded-lg border border-pink-200">
-                                      <svg className="w-4 h-4 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
-                                      </svg>
-                                      <span className="text-sm font-semibold text-pink-700">{mujeresElectas}</span>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-gray-100">
-                                      <span className="text-xs text-gray-400">0</span>
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="px-3 py-4 whitespace-nowrap">
-                                  {aporteTotal > 0 ? (
-                                    <div className="flex items-center gap-1 bg-green-50 px-2 py-1.5 rounded-lg border border-green-200">
-                                      <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
-                                      </svg>
-                                      <span className="text-sm font-semibold text-green-700">{aporteTotal.toFixed(2)} UF</span>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-gray-100">
-                                      <span className="text-xs text-gray-400">0 UF</span>
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-900">
-                                  {(() => {
-                                    const porcentaje = partido.votos_encuesta || 0
-                                    return (
-                                      <div className="flex items-center gap-2">
-                                        <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner" style={{ minWidth: '100px' }}>
-                                          <div 
-                                            className="h-full bg-blue-600 rounded-full transition-all duration-300 shadow-sm"
-                                            style={{ width: `${porcentaje}%` }}
-                                          />
-                                        </div>
-                                        <span className="font-medium text-xs min-w-[45px] text-right whitespace-nowrap">
-                                          {porcentaje}%
-                                        </span>
+                              <React.Fragment key={`partido-${index}`}>
+                                <tr
+                                  className={`transition-all duration-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} ${tieneCandidatos ? 'hover:bg-blue-50 cursor-pointer' : 'hover:bg-gray-50'}`}
+                                  onClick={() => {
+                                    if (tieneCandidatos) {
+                                      togglePartido(partido.codigo)
+                                    }
+                                  }}
+                                >
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center gap-3">
+                                      {tieneCandidatos && (
+                                        <button
+                                          className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors shadow-sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            togglePartido(partido.codigo)
+                                          }}
+                                        >
+                                          <svg
+                                            className={`w-5 h-5 text-blue-600 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                          </svg>
+                                        </button>
+                                      )}
+                                      <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-linear-to-br from-blue-500 to-blue-600 shadow-md">
+                                        <span className="text-sm font-bold text-white">{partido.codigo}</span>
                                       </div>
-                                    )
-                                  })()}
-                                </td>
-                              </tr>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2">
+                                      <div className="text-sm font-semibold text-gray-900">
+                                        {getPartidoNombre(partido.codigo)}
+                                      </div>
+                                      {tieneElectos && (
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 animate-pulse">
+                                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                          </svg>
+                                          {electosPartido.length} electo{electosPartido.length !== 1 ? 's' : ''}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${getPactoColor(partido.pacto)}`}>
+                                      {partido.pacto}
+                                    </span>
+                                  </td>
+                                  <td className="px-2 py-3 whitespace-nowrap">
+                                    {mujeresElectas > 0 ? (
+                                      <div className="flex items-center justify-center gap-1 bg-pink-50 px-1.5 py-1 rounded border border-pink-200">
+                                        <svg className="w-3 h-3 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                        </svg>
+                                        <span className="text-xs font-semibold text-pink-700">{mujeresElectas}</span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center justify-center px-1.5 py-1 rounded bg-gray-100">
+                                        <span className="text-xs text-gray-400">0</span>
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="px-2 py-3 whitespace-nowrap">
+                                    {aporteTotal > 0 ? (
+                                      <div className="flex items-center justify-center gap-0.5 bg-green-50 px-1.5 py-1 rounded border border-green-200">
+                                        <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                          <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                                        </svg>
+                                        <span className="text-xs font-semibold text-green-700">{aporteTotal.toFixed(0)}</span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center justify-center px-1.5 py-1 rounded bg-gray-100">
+                                        <span className="text-xs text-gray-400">0</span>
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-gray-900">
+                                    {(() => {
+                                      const porcentaje = partido.votos_encuesta || 0
+                                      return (
+                                        <div className="flex flex-col gap-1">
+                                          <div className="flex items-center gap-2">
+                                            <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner" style={{ minWidth: '100px' }}>
+                                              <div
+                                                className="h-full bg-blue-600 rounded-full transition-all duration-300 shadow-sm"
+                                                style={{ width: `${porcentaje}%` }}
+                                              />
+                                            </div>
+                                            <span className="font-medium text-xs min-w-[45px] text-right whitespace-nowrap">
+                                              {porcentaje}%
+                                            </span>
+                                          </div>
+                                          {totalVotosPartido > 0 && (
+                                            <div className="text-xs text-gray-600 font-medium text-right">
+                                              {totalVotosPartido.toLocaleString('es-CL')} votos
+                                            </div>
+                                          )}
+                                        </div>
+                                      )
+                                    })()}
+                                  </td>
+                                </tr>
+
+                                {/* Fila expandible con TODOS los candidatos del partido */}
+                                {tieneCandidatos && (
+                                  <tr className={`transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 h-0'}`}>
+                                    <td colSpan="6" className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'px-6 py-4' : 'px-6 py-0'}`}>
+                                      <div className={`bg-linear-to-r from-purple-50 to-pink-50 rounded-lg transition-all duration-300 ${isExpanded ? 'p-4 border-2 border-purple-200' : 'p-0'}`}>
+                                        {isExpanded && (
+                                          <div className="animate-in fade-in duration-300">
+                                            <div className="flex items-center gap-2 mb-4">
+                                              <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                              </svg>
+                                              <h4 className="text-base font-bold text-purple-800">
+                                                {partido.codigo === 'IND' ? 'Candidatos Independientes' : `Candidatos del Partido ${getPartidoNombre(partido.codigo)}`}
+                                              </h4>
+                                              <span className="ml-auto text-sm font-semibold text-purple-600">
+                                                {candidatosPartido.length} candidato{candidatosPartido.length !== 1 ? 's' : ''}
+                                              </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                              {candidatosPartido.map((candidato, idx) => {
+                                                const esElecto = electosPartido.some(e => e.nombre === candidato.nombre)
+
+                                                return (
+                                                  <div
+                                                    key={idx}
+                                                    className={`flex items-center justify-between bg-white p-4 rounded-lg shadow-md border-l-4 hover:shadow-lg transition-shadow duration-200 ${esElecto ? 'border-green-500' : 'border-red-500'}`}
+                                                  >
+                                                    <div className="flex items-center gap-3 flex-1">
+                                                      {candidato.id_foto && (
+                                                        <img
+                                                          src={`https://static.emol.cl/emol50/especiales/img/2025/elecciones/dip/${candidato.id_foto}.jpg`}
+                                                          alt={candidato.nombre}
+                                                          className={`w-16 h-16 rounded-full object-cover border-2 shadow-sm ${esElecto ? 'border-green-500' : 'border-red-500'}`}
+                                                          onError={(e) => {
+                                                            e.target.style.display = 'none'
+                                                          }}
+                                                        />
+                                                      )}
+                                                      <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                          <svg className={`w-4 h-4 ${esElecto ? 'text-green-600' : 'text-red-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                          </svg>
+                                                          <div className="font-bold text-gray-900">{candidato.nombre}</div>
+                                                        </div>
+                                                        <div className="text-xs text-gray-600 ml-6">
+                                                          <span className="font-semibold">{getPactoNombre(candidato.pacto)}</span>
+                                                          {candidato.cupo && <span> • Cupo: {candidato.cupo}</span>}
+
+                                                          {/* Porcentaje y Votos */}
+                                                          <div className="mt-2">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                              <div className="flex-1 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                                                <div
+                                                                  className={`h-full rounded-full ${esElecto ? 'bg-green-500' : 'bg-gray-400'}`}
+                                                                  style={{ width: `${candidato.votos_encuesta || 0}%` }}
+                                                                />
+                                                              </div>
+                                                              <span className="text-xs font-bold text-gray-700">
+                                                                {candidato.votos_encuesta || 0}%
+                                                              </span>
+                                                            </div>
+                                                            {candidato.votos_reales_cantidad > 0 && (
+                                                              <div className="font-medium text-indigo-600">
+                                                                {candidato.votos_reales_cantidad.toLocaleString('es-CL')} votos
+                                                              </div>
+                                                            )}
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                      <span className={`px-3 py-1 text-xs font-bold text-white rounded-full ${esElecto ? 'bg-green-600' : 'bg-red-600'}`}>
+                                                        {esElecto ? 'ELECTO' : 'NO ELECTO'}
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                )
+                                              })}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
                             )
                           })}
                         </tbody>
@@ -913,15 +1006,16 @@ function Distritos() {
                 </div>
               )}
             </div>
-          )}
+          )
+          }
 
           <div className="mt-6 text-sm text-gray-500">
             <p>Total de distritos disponibles: {distritos.length}</p>
             {selectedDistrito && <p>Candidatos en distrito seleccionado: {candidatos.length}</p>}
           </div>
-        </div>
-      </div>
-    </div>
+        </div >
+      </div >
+    </div >
   )
 }
 
