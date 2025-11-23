@@ -147,6 +147,8 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
           return color
         }
       }
+      
+      return '#cbd5e1' // Fallback a slate-300 (color de IND) en lugar de negro
     }
 
     return '#1f2937' // Gris oscuro casi negro para escaños vacíos

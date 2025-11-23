@@ -130,9 +130,26 @@ const HemicicloPage = () => {
 
                   // Acumular por pacto
                   const pacto = candidato.pacto || 'SIN PACTO'
-                  acumuladoPactos[pacto] = (acumuladoPactos[pacto] || 0) + votos
+                  
+                  // Evitar duplicación cuando se usan pactos ficticios
+                  if (tipoCalculo === 'derecha') {
+                    // Si estamos en modo derecha, solo contar JK, no J ni K
+                    if (!['J', 'K'].includes(pacto)) {
+                      acumuladoPactos[pacto] = (acumuladoPactos[pacto] || 0) + votos
+                    }
+                  } else if (tipoCalculo === 'izquierda') {
+                    // Si estamos en modo izquierda, solo contar AH, no A,B,C,D,F,G,H
+                    if (!['A', 'B', 'C', 'D', 'F', 'G', 'H'].includes(pacto)) {
+                      acumuladoPactos[pacto] = (acumuladoPactos[pacto] || 0) + votos
+                    }
+                  } else {
+                    // Modo normal, contar todos excepto JK y AH
+                    if (!['JK', 'AH'].includes(pacto)) {
+                      acumuladoPactos[pacto] = (acumuladoPactos[pacto] || 0) + votos
+                    }
+                  }
 
-                  // Acumular por partido
+                  // Acumular por partido (sin filtros, todos se cuentan)
                   const partido = candidato.partido || 'IND'
                   acumuladoPartidos[partido] = (acumuladoPartidos[partido] || 0) + votos
                 })
@@ -256,6 +273,17 @@ const HemicicloPage = () => {
         partidos.add(candidato.partido || 'IND')
       }
     })
+
+    if (codigoPacto === 'X') {
+      // Solo mostrar IND para el pacto X
+      const tieneIndependientes = candidatosElectos.some(c =>
+        c.pacto === 'X' && (!c.partido || c.partido === 'IND')
+      )
+      if (tieneIndependientes) {
+        partidos.add('IND')
+      }
+    }
+
     return Array.from(partidos).sort()
   }
 
@@ -271,6 +299,7 @@ const HemicicloPage = () => {
 
   // Obtener votos por pacto
   const getVotosPorPacto = (codigoPacto) => {
+    // Para el pacto X, solo devolver los votos directamente sin sumar otros partidos
     return votosNacionalesPorPacto[codigoPacto] || 0
   }
 
@@ -302,7 +331,7 @@ const HemicicloPage = () => {
             </span>
           </p>
           {totalVotosNacionales > 0 && (
-            <p className="text-lg font-semibold text-indigo-600 mt-2">
+            <p className="text-lg font-semibold text-indigo-600 mt-1">
               Total Nacional de Votos Válidos: {totalVotosNacionales.toLocaleString('es-CL')}
             </p>
           )}
@@ -496,7 +525,14 @@ const HemicicloPage = () => {
                       </span>
                       <div>
                         <div className="text-sm font-medium text-gray-900">{PACTO_NOMBRES[codigo] || codigo}</div>
-                        <div className="text-xs text-gray-500">{((cantidad / candidatosElectos.length) * 100).toFixed(1)}%</div>
+                        <div className="text-xs text-gray-500">
+                          {((cantidad / candidatosElectos.length) * 100).toFixed(1)}% escaños
+                          {getVotosPorPacto(codigo) > 0 && totalVotosNacionales > 0 && (
+                            <span>
+                              {' | '}{((getVotosPorPacto(codigo) / totalVotosNacionales) * 100).toFixed(2)}% votos
+                            </span>
+                          )}
+                        </div>
                         {getVotosPorPacto(codigo) > 0 && (
                           <div className="text-xs text-indigo-600 font-medium">
                             {getVotosPorPacto(codigo).toLocaleString('es-CL')} votos
@@ -532,7 +568,19 @@ const HemicicloPage = () => {
                       </span>
                       <div>
                         <div className="text-sm font-medium text-gray-900">{PARTIDO_NOMBRES[codigo] || codigo}</div>
-                        <div className="text-xs text-gray-500">{((cantidad / candidatosElectos.length) * 100).toFixed(1)}%</div>
+                        <div className="text-xs text-gray-500">
+                          {((cantidad / candidatosElectos.length) * 100).toFixed(1)}% escaños
+                          {votosNacionalesPorPartido[codigo] && totalVotosNacionales > 0 && (
+                            <span>
+                              {' | '}{((votosNacionalesPorPartido[codigo] / totalVotosNacionales) * 100).toFixed(2)}% votos
+                            </span>
+                          )}
+                        </div>
+                        {votosNacionalesPorPartido[codigo] && (
+                          <div className="text-xs text-blue-600 font-medium mt-0.5">
+                            {Math.round(votosNacionalesPorPartido[codigo]).toLocaleString('es-CL')} votos
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="text-2xl font-bold text-blue-600">{cantidad}</div>

@@ -11,7 +11,7 @@ export const useVotos = () => {
 }
 
 export const VotosProvider = ({ children }) => {
-  const [tipoVotos, setTipoVotos] = useState('encuesta') // 'encuesta', 'reales' o 'comparativa'
+  const [tipoVotos, setTipoVotos] = useState('reales') // 'encuesta', 'reales' o 'comparativa'
   const [tipoCalculo, setTipoCalculo] = useState('normal') // 'normal', 'derecha', 'izquierda'
 
   return (
