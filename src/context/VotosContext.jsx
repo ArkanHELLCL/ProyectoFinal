@@ -36,12 +36,25 @@ const guardarEnLocalStorage = (key, data) => {
 
 export const VotosProvider = ({ children }) => {
   // Inicializar tipoVotos desde localStorage o usar 'reales' por defecto
+  // Solo puede ser 'reales' o 'encuesta'
   const [tipoVotos, setTipoVotos] = useState(() => {
     try {
       const saved = localStorage.getItem('votos_tipo_votos')
+      // Si es 'comparativa', cambiar a 'reales'
+      if (saved === 'comparativa') return 'reales'
       return saved || 'reales'
     } catch {
       return 'reales'
+    }
+  })
+  
+  // Modo comparativa: activa la visualización lado a lado de encuesta vs reales
+  const [modoComparativa, setModoComparativa] = useState(() => {
+    try {
+      const saved = localStorage.getItem('votos_modo_comparativa')
+      return saved === 'true'
+    } catch {
+      return false
     }
   })
   
@@ -91,6 +104,15 @@ export const VotosProvider = ({ children }) => {
       // Error silencioso
     }
   }, [tipoVotos])
+
+  // Guardar modoComparativa en localStorage cuando cambie
+  useEffect(() => {
+    try {
+      localStorage.setItem('votos_modo_comparativa', modoComparativa.toString())
+    } catch {
+      // Error silencioso
+    }
+  }, [modoComparativa])
 
   // Guardar tipoCalculoReales en localStorage cuando cambie
   useEffect(() => {
@@ -312,7 +334,9 @@ export const VotosProvider = ({ children }) => {
   return (
     <VotosContext.Provider value={{ 
       tipoVotos, 
-      setTipoVotos, 
+      setTipoVotos,
+      modoComparativa,
+      setModoComparativa,
       tipoCalculo, 
       setTipoCalculo,
       cargarDistrito,

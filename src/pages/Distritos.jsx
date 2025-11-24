@@ -74,7 +74,8 @@ const PARTIDO_NOMBRES = {
 
 function Distritos() {
   const { 
-    tipoVotos, 
+    tipoVotos,
+    modoComparativa,
     tipoCalculo, 
     cargarDistrito,
     getDistritoData,
@@ -388,7 +389,7 @@ function Distritos() {
           </div>
           <p className="text-gray-600">
             Seleccione un distrito para visualizar la información electoral - <span className="inline-block ml-1 px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
-              Votos de {tipoVotos === 'encuesta' ? 'Encuesta' : tipoVotos === 'reales' ? 'Reales' : 'Comparativa'}
+              Votos de {tipoVotos === 'encuesta' ? 'Encuesta' : 'Reales'} {modoComparativa && '(Modo Comparativa)'}
             </span>
             <span className="inline-block ml-2 px-3 py-1 bg-purple-100 text-purple-700 text-sm font-medium rounded-full">
               Cálculo: {tipoCalculo === 'normal' ? 'Normal' : tipoCalculo === 'derecha' ? 'Derecha (J+K)' : 'Izquierda (A-H)'}
