@@ -31,7 +31,13 @@ const PARTIDO_NOMBRES = {
 }
 
 const Comparativa = () => {
-  const { tipoCalculo } = useVotos()
+  const { 
+    tipoCalculo,
+    cargarDistrito,
+    getDistritoData,
+    getDistritosCargadosCount
+  } = useVotos()
+  
   const [candidatosEncuesta, setCandidatosEncuesta] = useState([])
   const [candidatosReales, setCandidatosReales] = useState([])
   const [loading, setLoading] = useState(true)
@@ -53,10 +59,6 @@ const Comparativa = () => {
   const cargarDatosComparativos = async () => {
     try {
       setLoading(true)
-      setProgresoEncuesta(0)
-      setProgresoReales(0)
-      setEncuestaCompleto(false)
-      setRealesCompleto(false)
       
       // Resetear contadores
       completadosEncuestaRef.current = 0
@@ -64,72 +66,77 @@ const Comparativa = () => {
       
       const totalDistritos = 28
       
-      // Crear TODAS las 56 promesas de fetch simultáneamente
-      const todasLasPromesas = []
-      const indicesEncuesta = []
-      const indicesReales = []
+      // Verificar cuántos distritos ya están cargados
+      const encuestaYaCargados = getDistritosCargadosCount('encuesta', tipoCalculo)
+      const realesYaCargados = getDistritosCargadosCount('reales', tipoCalculo)
+      
+      completadosEncuestaRef.current = encuestaYaCargados
+      completadosRealesRef.current = realesYaCargados
+      
+      setProgresoEncuesta((encuestaYaCargados / totalDistritos) * 100)
+      setProgresoReales((realesYaCargados / totalDistritos) * 100)
+      setEncuestaCompleto(encuestaYaCargados === totalDistritos)
+      setRealesCompleto(realesYaCargados === totalDistritos)
+      
+      // Crear promesas para cargar los distritos
+      const promesasEncuesta = []
+      const promesasReales = []
 
-      // Lanzar todas las llamadas de encuesta y reales entremezcladas
-      for (let distrito = 1; distrito <= 28; distrito++) {
+      for (let distrito = 1; distrito <= totalDistritos; distrito++) {
         // Encuesta
-        let urlEncuesta = `${API_BASE_URL}/api/candidatos/${distrito}?votos=encuesta`
-        if (tipoCalculo === 'izquierda') {
-          urlEncuesta += '&pacto_ficticio=toda_izquierda'
-        } else if (tipoCalculo === 'derecha') {
-          urlEncuesta += '&pacto_ficticio=toda_derecha'
-        }
-
-        indicesEncuesta.push(todasLasPromesas.length)
-        todasLasPromesas.push(
-          fetch(urlEncuesta)
-            .then(res => res.json())
-            .then(data => {
-              const electos = data.resultados?.candidatos_electos || []
-              completadosEncuestaRef.current++
-              setProgresoEncuesta((completadosEncuestaRef.current / totalDistritos) * 100)
-              return electos
-            })
-            .catch(err => {
+        promesasEncuesta.push(
+          (async () => {
+            try {
+              // Verificar cache primero
+              let data = getDistritoData(distrito, 'encuesta', tipoCalculo)
+              
+              if (!data) {
+                // Cargar desde API
+                data = await cargarDistrito(distrito, 'encuesta', tipoCalculo)
+                completadosEncuestaRef.current++
+                setProgresoEncuesta((completadosEncuestaRef.current / totalDistritos) * 100)
+              }
+              
+              return data?.candidatos_electos || []
+            } catch (err) {
               console.error(`Error al obtener distrito ${distrito} (encuesta):`, err)
               completadosEncuestaRef.current++
               setProgresoEncuesta((completadosEncuestaRef.current / totalDistritos) * 100)
               return []
-            })
+            }
+          })()
         )
 
         // Reales
-        let urlReales = `${API_BASE_URL}/api/candidatos/${distrito}?votos=reales`
-        if (tipoCalculo === 'izquierda') {
-          urlReales += '&pacto_ficticio=toda_izquierda'
-        } else if (tipoCalculo === 'derecha') {
-          urlReales += '&pacto_ficticio=toda_derecha'
-        }
-
-        indicesReales.push(todasLasPromesas.length)
-        todasLasPromesas.push(
-          fetch(urlReales)
-            .then(res => res.json())
-            .then(data => {
-              const electos = data.resultados?.candidatos_electos || []
-              completadosRealesRef.current++
-              setProgresoReales((completadosRealesRef.current / totalDistritos) * 100)
-              return electos
-            })
-            .catch(err => {
+        promesasReales.push(
+          (async () => {
+            try {
+              // Verificar cache primero
+              let data = getDistritoData(distrito, 'reales', tipoCalculo)
+              
+              if (!data) {
+                // Cargar desde API
+                data = await cargarDistrito(distrito, 'reales', tipoCalculo)
+                completadosRealesRef.current++
+                setProgresoReales((completadosRealesRef.current / totalDistritos) * 100)
+              }
+              
+              return data?.candidatos_electos || []
+            } catch (err) {
               console.error(`Error al obtener distrito ${distrito} (reales):`, err)
               completadosRealesRef.current++
               setProgresoReales((completadosRealesRef.current / totalDistritos) * 100)
               return []
-            })
+            }
+          })()
         )
       }
 
-      // Esperar a que TODAS las 56 llamadas terminen simultáneamente
-      const todosLosResultados = await Promise.all(todasLasPromesas)
-      
-      // Separar resultados de encuesta y reales
-      const resultadosEncuesta = indicesEncuesta.map(i => todosLosResultados[i])
-      const resultadosReales = indicesReales.map(i => todosLosResultados[i])
+      // Esperar a que todas las promesas terminen
+      const [resultadosEncuesta, resultadosReales] = await Promise.all([
+        Promise.all(promesasEncuesta),
+        Promise.all(promesasReales)
+      ])
       
       setEncuestaCompleto(true)
       setRealesCompleto(true)

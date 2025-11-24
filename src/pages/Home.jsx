@@ -3,7 +3,14 @@ import { Link } from 'react-router-dom'
 import { useVotos } from '../context/VotosContext'
 
 const Home = () => {
-  const { tipoVotos, setTipoVotos, tipoCalculo, setTipoCalculo } = useVotos()
+  const { tipoVotos, setTipoVotos, tipoCalculo, setTipoCalculo, limpiarCache, getDistritosCargadosCount } = useVotos()
+
+  const handleLimpiarCache = () => {
+    if (window.confirm('¿Estás seguro de que deseas limpiar la caché? Esto forzará la recarga de todos los datos desde la API.')) {
+      limpiarCache()
+      alert('Caché limpiada exitosamente')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 py-8 px-4">
@@ -156,6 +163,24 @@ const Home = () => {
               <div className="text-3xl font-bold text-green-600 mb-1">11</div>
               <div className="text-sm text-gray-600">Pactos Políticos</div>
             </div>
+          </div>
+        </div>
+
+        {/* Control de caché */}
+        <div className="mt-6 bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">Gestión de Caché</h3>
+              <p className="text-sm text-gray-600">
+                Distritos cargados en caché: <span className="font-semibold text-indigo-600">{getDistritosCargadosCount()}/28</span>
+              </p>
+            </div>
+            <button
+              onClick={handleLimpiarCache}
+              className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:-translate-y-0.5"
+            >
+              Limpiar Caché
+            </button>
           </div>
         </div>
       </div>

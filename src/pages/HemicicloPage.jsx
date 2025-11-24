@@ -49,7 +49,14 @@ const PARTIDO_NOMBRES = {
 }
 
 const HemicicloPage = () => {
-  const { tipoVotos, tipoCalculo } = useVotos()
+  const { 
+    tipoVotos, 
+    tipoCalculo, 
+    cargarDistrito,
+    getDistritoData,
+    getDistritosCargadosCount
+  } = useVotos()
+  
   const [candidatosElectos, setCandidatosElectos] = useState([])
   const [candidatosElectosCargando, setCandidatosElectosCargando] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -58,7 +65,6 @@ const HemicicloPage = () => {
   const [error, setError] = useState(null)
   const [colorearPor, setColorearPor] = useState('pacto') // 'pacto' o 'partido'
   const [distritosEnProceso, setDistritosEnProceso] = useState([]) // Para mostrar distritos procesándose en paralelo
-  const [distritosCompletados, setDistritosCompletados] = useState(0)
   const [estadoDistritos, setEstadoDistritos] = useState({}) // { [id]: 'pendiente' | 'ok' | 'error' }
   const [totalVotosNacionales, setTotalVotosNacionales] = useState(0)
   const [votosNacionalesPorPacto, setVotosNacionalesPorPacto] = useState({})
@@ -70,14 +76,12 @@ const HemicicloPage = () => {
     return distrito ? distrito.name : `Distrito ${id}`
   }
 
-  // Función para cargar todos los candidatos electos de todos los distritos en paralelo
+  // Función para cargar todos los candidatos electos de todos los distritos
   const cargarTodosLosElectos = async () => {
     setLoading(true)
     setError(null)
     setCandidatosElectos([])
     setCandidatosElectosCargando(0)
-    setProgress(0)
-    setDistritosCompletados(0)
     setEstadoDistritos({})
     setTotalVotosNacionales(0)
 
@@ -88,100 +92,63 @@ const HemicicloPage = () => {
     const acumuladoPartidos = {}
 
     try {
-      const todosLosElectos = []
-      const promises = []
+      // Verificar distritos ya cargados
+      const distritosYaCargados = getDistritosCargadosCount(tipoVotos, tipoCalculo)
+      setProgress(Math.round((distritosYaCargados / totalDistritos) * 100))
 
+      // Preparar lista de distritos
       for (let distrito = 1; distrito <= totalDistritos; distrito++) {
         distritosActuales.push({
           id: distrito,
           nombre: getDistritoNombre(distrito.toString())
         })
+      }
+      setDistritosEnProceso(distritosActuales)
 
-        let url = `${API_BASE_URL}/api/candidatos/${distrito}?votos=${tipoVotos}`
-        if (tipoCalculo === 'izquierda') {
-          url += '&pacto_ficticio=toda_izquierda'
-        } else if (tipoCalculo === 'derecha') {
-          url += '&pacto_ficticio=toda_derecha'
-        }
+      const todosLosElectos = []
+      let procesados = 0
 
-        const promise = fetch(url)
-          .then(response => {
-            if (response.ok) {
-              return response.json()
+      // Cargar todos los distritos (usa cache automáticamente)
+      const promises = []
+      for (let distrito = 1; distrito <= totalDistritos; distrito++) {
+        const promise = (async () => {
+          try {
+            // Verificar si ya está en cache
+            let data = getDistritoData(distrito, tipoVotos, tipoCalculo)
+            
+            if (!data) {
+              // No está en cache, cargar este distrito específico desde API
+              data = await cargarDistrito(distrito, tipoVotos, tipoCalculo)
             }
-            return null
-          })
-          .then(data => {
-            if (data && data.resultados && data.resultados.candidatos_electos) {
-              todosLosElectos.push(...data.resultados.candidatos_electos)
-              setEstadoDistritos(prev => ({ ...prev, [distrito]: 'ok' }))
-              setCandidatosElectosCargando(prev => prev + data.resultados.candidatos_electos.length)
 
-              // Acumular votos totales reales si existen
+            if (data) {
+              todosLosElectos.push(...data.candidatos_electos)
+              setEstadoDistritos(prev => ({ ...prev, [distrito]: 'ok' }))
+              setCandidatosElectosCargando(prev => prev + data.candidatos_electos.length)
+              
               if (data.votos_totales_reales) {
                 votosTotalesPorDistrito.push(data.votos_totales_reales)
               }
-
-              // Acumular votos por pacto y partido usando todos los candidatos (electos y no electos)
               if (data.candidatos) {
-                data.candidatos.forEach(candidato => {
-                  // Usar votos reales cantidad si estamos en modo reales o si existe
-                  const votos = candidato.votos_reales_cantidad || 0
-
-                  // Acumular por pacto
-                  const pacto = candidato.pacto || 'SIN PACTO'
-                  
-                  // Evitar duplicación cuando se usan pactos ficticios
-                  if (tipoCalculo === 'derecha') {
-                    // Si estamos en modo derecha, solo contar JK, no J ni K
-                    if (!['J', 'K'].includes(pacto)) {
-                      acumuladoPactos[pacto] = (acumuladoPactos[pacto] || 0) + votos
-                    }
-                  } else if (tipoCalculo === 'izquierda') {
-                    // Si estamos en modo izquierda, solo contar AH, no A,B,C,D,F,G,H
-                    if (!['A', 'B', 'C', 'D', 'F', 'G', 'H'].includes(pacto)) {
-                      acumuladoPactos[pacto] = (acumuladoPactos[pacto] || 0) + votos
-                    }
-                  } else {
-                    // Modo normal, contar todos excepto JK y AH
-                    if (!['JK', 'AH'].includes(pacto)) {
-                      acumuladoPactos[pacto] = (acumuladoPactos[pacto] || 0) + votos
-                    }
-                  }
-
-                  // Acumular por partido (sin filtros, todos se cuentan)
-                  const partido = candidato.partido || 'IND'
-                  acumuladoPartidos[partido] = (acumuladoPartidos[partido] || 0) + votos
-                })
+                procesarCandidatos(data.candidatos, acumuladoPactos, acumuladoPartidos)
               }
             } else {
               setEstadoDistritos(prev => ({ ...prev, [distrito]: 'error' }))
             }
-            // Actualizar progreso y distrito actual
-            setDistritosCompletados(prev => {
-              const nuevo = prev + 1
-              setProgress(Math.round((nuevo / totalDistritos) * 100))
-              setCurrentDistrito(`Distrito ${distrito} procesado`)
-              return nuevo
-            })
-            return null
-          })
-          .catch(err => {
-            console.error(`Error al obtener distrito ${distrito}:`, err)
+
+            procesados++
+            setProgress(Math.round((procesados / totalDistritos) * 100))
+            setCurrentDistrito(`Distrito ${distrito} procesado`)
+          } catch (error) {
+            console.error(`Error al cargar distrito ${distrito}:`, error)
             setEstadoDistritos(prev => ({ ...prev, [distrito]: 'error' }))
-            setDistritosCompletados(prev => {
-              const nuevo = prev + 1
-              setProgress(Math.round((nuevo / totalDistritos) * 100))
-              setCurrentDistrito(`Distrito ${distrito} error`)
-              return nuevo
-            })
-            return null
-          })
+            procesados++
+            setProgress(Math.round((procesados / totalDistritos) * 100))
+          }
+        })()
 
         promises.push(promise)
       }
-
-      setDistritosEnProceso(distritosActuales)
 
       await Promise.all(promises)
 
@@ -201,6 +168,33 @@ const HemicicloPage = () => {
       setLoading(false)
       setDistritosEnProceso([])
     }
+  }
+
+  // Función auxiliar para procesar candidatos y acumular votos
+  const procesarCandidatos = (candidatos, acumuladoPactos, acumuladoPartidos) => {
+    candidatos.forEach(candidato => {
+      const votos = candidato.votos_reales_cantidad || 0
+      const pacto = candidato.pacto || 'SIN PACTO'
+      
+      // Acumular por pacto
+      if (tipoCalculo === 'derecha') {
+        if (!['J', 'K'].includes(pacto)) {
+          acumuladoPactos[pacto] = (acumuladoPactos[pacto] || 0) + votos
+        }
+      } else if (tipoCalculo === 'izquierda') {
+        if (!['A', 'B', 'C', 'D', 'F', 'G', 'H'].includes(pacto)) {
+          acumuladoPactos[pacto] = (acumuladoPactos[pacto] || 0) + votos
+        }
+      } else {
+        if (!['JK', 'AH'].includes(pacto)) {
+          acumuladoPactos[pacto] = (acumuladoPactos[pacto] || 0) + votos
+        }
+      }
+
+      // Acumular por partido
+      const partido = candidato.partido || 'IND'
+      acumuladoPartidos[partido] = (acumuladoPartidos[partido] || 0) + votos
+    })
   }
 
   const getPactoColor = (codigo) => {

@@ -73,7 +73,14 @@ const PARTIDO_NOMBRES = {
 };
 
 function Distritos() {
-  const { tipoVotos, tipoCalculo } = useVotos()
+  const { 
+    tipoVotos, 
+    tipoCalculo, 
+    cargarDistrito,
+    getDistritoData,
+    getDistritoEstado
+  } = useVotos()
+  
   const [candidatos, setCandidatos] = useState([])
   const [distritos, setDistritos] = useState([])
   const [escanos, setEscanos] = useState([])
@@ -144,8 +151,8 @@ function Distritos() {
 
     // Ordenar por votos descendente
     return votosAcumulados.sort((a, b) => {
-      const votosA = a.votos_reales || a.votos_encuesta || 0
-      const votosB = b.votos_reales || b.votos_encuesta || 0
+      const votosA = a.votos || a.votos_reales || a.votos_encuesta || 0
+      const votosB = b.votos || b.votos_reales || b.votos_encuesta || 0
       return votosB - votosA
     })
   }
@@ -247,35 +254,66 @@ function Distritos() {
     try {
       setLoadingVotos(true)
 
-      // Obtener candidatos del distrito con el tipo de votos seleccionado
-      let url = `${API_BASE_URL}/api/candidatos/${distrito}?votos=${tipoVotos}`
-      if (tipoCalculo === 'izquierda') {
-        url += '&pacto_ficticio=toda_izquierda'
-      } else if (tipoCalculo === 'derecha') {
-        url += '&pacto_ficticio=toda_derecha'
+      // Verificar si ya está en cache
+      let data = getDistritoData(distrito, tipoVotos, tipoCalculo)
+      
+      if (!data) {
+        // No está en cache, cargar desde API
+        data = await cargarDistrito(distrito, tipoVotos, tipoCalculo)
+        if (!data) {
+          throw new Error('Error al obtener los candidatos del distrito')
+        }
       }
-      const response = await fetch(url)
-
-      if (!response.ok) {
-        throw new Error('Error al obtener los candidatos del distrito')
-      }
-
-      const data = await response.json()
-      console.log('Respuesta API candidatos:', data)
 
       // Extraer candidatos
       const candidatosDistrito = data.candidatos || []
 
-      // Extraer candidatos electos (están dentro de resultados.candidatos_electos)
-      let electos = []
-      if (data.resultados && data.resultados.candidatos_electos) {
-        electos = data.resultados.candidatos_electos
-      }
+      // Extraer candidatos electos
+      let electos = data.candidatos_electos || []
 
-      // Extraer listas y partidos desde acumulado
-      const acumulado = data.acumulado || {}
-      const listas = acumulado.listas || []
-      const partidos = acumulado.partidos || []
+      // Calcular listas y partidos acumulados desde candidatos
+      const listasMap = {}
+      const partidosMap = {}
+      
+      candidatosDistrito.forEach(candidato => {
+        // Determinar qué campo de votos usar según tipoVotos
+        let votos = 0
+        if (tipoVotos === 'reales') {
+          votos = candidato.votos_reales_cantidad || candidato.votos || 0
+        } else {
+          votos = candidato.votos_encuesta_cantidad || candidato.votos || 0
+        }
+        
+        const pacto = candidato.pacto || 'SIN PACTO'
+        const partido = candidato.partido || 'IND'
+        
+        // Acumular por pacto - usar estructura consistente con el resto del código
+        if (!listasMap[pacto]) {
+          listasMap[pacto] = { 
+            codigo: pacto, 
+            lista: pacto,
+            votos: 0,
+            votos_reales: 0
+          }
+        }
+        listasMap[pacto].votos += votos
+        listasMap[pacto].votos_reales += votos
+        
+        // Acumular por partido - usar estructura consistente
+        if (!partidosMap[partido]) {
+          partidosMap[partido] = { 
+            codigo: partido,
+            partido: partido, 
+            votos: 0,
+            votos_reales: 0
+          }
+        }
+        partidosMap[partido].votos += votos
+        partidosMap[partido].votos_reales += votos
+      })
+
+      const listas = Object.values(listasMap)
+      const partidos = Object.values(partidosMap)
 
       // Extraer votos_totales_reales si está disponible
       const votosTotales = data.votos_totales_reales || null
