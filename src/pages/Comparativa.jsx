@@ -98,8 +98,7 @@ const Comparativa = () => {
               }
               
               return data?.candidatos_electos || []
-            } catch (err) {
-              console.error(`Error al obtener distrito ${distrito} (encuesta):`, err)
+            } catch {
               completadosEncuestaRef.current++
               setProgresoEncuesta((completadosEncuestaRef.current / totalDistritos) * 100)
               return []
@@ -122,8 +121,7 @@ const Comparativa = () => {
               }
               
               return data?.candidatos_electos || []
-            } catch (err) {
-              console.error(`Error al obtener distrito ${distrito} (reales):`, err)
+            } catch {
               completadosRealesRef.current++
               setProgresoReales((completadosRealesRef.current / totalDistritos) * 100)
               return []
@@ -153,18 +151,6 @@ const Comparativa = () => {
         todosElectosReales.push(...electos)
       })
 
-      console.log('=== RESUMEN FINAL ===')
-      console.log('Total candidatos encuesta:', todosElectosEncuesta.length)
-      console.log('Total candidatos reales:', todosElectosReales.length)
-      console.log('Primeros 3 candidatos encuesta:', todosElectosEncuesta.slice(0, 3))
-      console.log('Primeros 3 candidatos reales:', todosElectosReales.slice(0, 3))
-      
-      // Verificar partidos únicos
-      const partidosEncuesta = [...new Set(todosElectosEncuesta.map(c => c.partido))]
-      const partidosReales = [...new Set(todosElectosReales.map(c => c.partido))]
-      console.log('Partidos únicos encuesta:', partidosEncuesta)
-      console.log('Partidos únicos reales:', partidosReales)
-      
       setCandidatosEncuesta(todosElectosEncuesta)
       setCandidatosReales(todosElectosReales)
       
@@ -172,8 +158,7 @@ const Comparativa = () => {
       calcularEstadisticas(todosElectosEncuesta, todosElectosReales)
       
       setLoading(false)
-    } catch (err) {
-      console.error('Error al cargar datos comparativos:', err)
+    } catch {
       setLoading(false)
     }
   }

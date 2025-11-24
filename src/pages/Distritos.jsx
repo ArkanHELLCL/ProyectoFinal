@@ -303,7 +303,8 @@ function Distritos() {
         if (!partidosMap[partido]) {
           partidosMap[partido] = { 
             codigo: partido,
-            partido: partido, 
+            partido: partido,
+            pacto: pacto,
             votos: 0,
             votos_reales: 0
           }
@@ -326,11 +327,9 @@ function Distritos() {
           const escanosData = await escanosResponse.json()
           // La API ahora devuelve solo el número de escaños
           setEscanos([{ numero_distrito: parseInt(distrito), escanos: escanosData }])
-        } else {
-          console.error('Error al obtener escaños, status:', escanosResponse.status)
         }
       } catch (escanosError) {
-        console.error('Error en fetch de escaños:', escanosError)
+        // Error silencioso
       }
 
       setCandidatos(candidatosDistrito)
@@ -390,6 +389,9 @@ function Distritos() {
           <p className="text-gray-600">
             Seleccione un distrito para visualizar la información electoral - <span className="inline-block ml-1 px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
               Votos de {tipoVotos === 'encuesta' ? 'Encuesta' : tipoVotos === 'reales' ? 'Reales' : 'Comparativa'}
+            </span>
+            <span className="inline-block ml-2 px-3 py-1 bg-purple-100 text-purple-700 text-sm font-medium rounded-full">
+              Cálculo: {tipoCalculo === 'normal' ? 'Normal' : tipoCalculo === 'derecha' ? 'Derecha (J+K)' : 'Izquierda (A-H)'}
             </span>
           </p>
         </header>
@@ -563,6 +565,15 @@ function Distritos() {
 
                             // Calcular votos totales del pacto sumando los candidatos
                             const totalVotosPacto = candidatosPacto.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
+                            
+                            // Para reales: calcular porcentaje, para encuesta: usar el valor de la API
+                            const porcentajeVotos = tipoVotos === 'reales' 
+                              ? (votosTotalesReales > 0 ? (totalVotosPacto / votosTotalesReales) * 100 : 0)
+                              : (lista.votos_encuesta || 0)
+                            
+                            // Calcular porcentaje de escaños
+                            const totalEscanos = getEscanos(selectedDistrito) || 0
+                            const porcentajeEscanos = totalEscanos > 0 ? (electosPacto.length / totalEscanos) * 100 : 0
 
                             const isExpanded = pactoExpandido === lista.codigo
                             const tieneCandidatos = candidatosPacto.length > 0
@@ -635,29 +646,49 @@ function Distritos() {
                                     })()}
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {(() => {
-                                      const porcentaje = lista.votos_encuesta || 0
-                                      return (
+                                    <div className="flex flex-col gap-2">
+                                      {/* Barra de porcentaje de votos */}
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-xs text-gray-500 font-medium">
+                                          {tipoVotos === 'reales' ? '% Votos Reales' : '% Encuesta'}
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                          <div className="bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner" style={{ minWidth: '200px', width: '200px' }}>
+                                            <div
+                                              className="h-full bg-blue-600 rounded-full transition-all duration-300 shadow-sm"
+                                              style={{ width: `${Math.min(porcentajeVotos, 100)}%` }}
+                                            />
+                                          </div>
+                                          <span className="font-medium text-xs min-w-[45px] text-right">
+                                            {porcentajeVotos.toFixed(1)}%
+                                          </span>
+                                        </div>
+                                      </div>
+                                      {totalVotosPacto > 0 && tipoVotos === 'reales' && (
+                                        <div className="text-xs text-gray-600 font-medium text-right">
+                                          {totalVotosPacto.toLocaleString('es-CL')} votos
+                                        </div>
+                                      )}
+                                      {/* Porcentaje de escaños */}
+                                      {tieneElectos && totalEscanos > 0 && tipoVotos === 'reales' && (
                                         <div className="flex flex-col gap-1">
+                                          <span className="text-xs text-gray-500 font-medium">
+                                            % Escaños Obtenidos
+                                          </span>
                                           <div className="flex items-center gap-2">
                                             <div className="bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner" style={{ minWidth: '200px', width: '200px' }}>
                                               <div
                                                 className="h-full bg-green-600 rounded-full transition-all duration-300 shadow-sm"
-                                                style={{ width: `${porcentaje}%` }}
+                                                style={{ width: `${Math.min(porcentajeEscanos, 100)}%` }}
                                               />
                                             </div>
-                                            <span className="font-medium text-xs min-w-[45px] text-right">
-                                              {porcentaje}%
+                                            <span className="font-medium text-xs min-w-[45px] text-right text-green-700">
+                                              {porcentajeEscanos.toFixed(1)}%
                                             </span>
                                           </div>
-                                          {totalVotosPacto > 0 && (
-                                            <div className="text-xs text-gray-600 font-medium text-right">
-                                              {totalVotosPacto.toLocaleString('es-CL')} votos
-                                            </div>
-                                          )}
                                         </div>
-                                      )
-                                    })()}
+                                      )}
+                                    </div>
                                   </td>
                                 </tr>
 
@@ -832,6 +863,15 @@ function Distritos() {
 
                             // Calcular votos totales del partido sumando los candidatos
                             const totalVotosPartido = candidatosPartido.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
+                            
+                            // Para reales: calcular porcentaje, para encuesta: usar el valor de la API
+                            const porcentajeVotosPartido = tipoVotos === 'reales'
+                              ? (votosTotalesReales > 0 ? (totalVotosPartido / votosTotalesReales) * 100 : 0)
+                              : (partido.votos_encuesta || 0)
+                            
+                            // Calcular porcentaje de escaños
+                            const totalEscanosP = getEscanos(selectedDistrito) || 0
+                            const porcentajeEscanosPartido = totalEscanosP > 0 ? (electosPartido.length / totalEscanosP) * 100 : 0
 
                             const isExpanded = partidoExpandido === partido.codigo
                             const tieneCandidatos = candidatosPartido.length > 0
@@ -922,29 +962,49 @@ function Distritos() {
                                     )}
                                   </td>
                                   <td className="px-6 py-4 text-sm text-gray-900">
-                                    {(() => {
-                                      const porcentaje = partido.votos_encuesta || 0
-                                      return (
+                                    <div className="flex flex-col gap-2">
+                                      {/* Barra de porcentaje de votos */}
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-xs text-gray-500 font-medium">
+                                          {tipoVotos === 'reales' ? '% Votos Reales' : '% Encuesta'}
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner" style={{ minWidth: '100px' }}>
+                                            <div
+                                              className="h-full bg-blue-600 rounded-full transition-all duration-300 shadow-sm"
+                                              style={{ width: `${Math.min(porcentajeVotosPartido, 100)}%` }}
+                                            />
+                                          </div>
+                                          <span className="font-medium text-xs min-w-[45px] text-right whitespace-nowrap">
+                                            {porcentajeVotosPartido.toFixed(1)}%
+                                          </span>
+                                        </div>
+                                      </div>
+                                      {totalVotosPartido > 0 && tipoVotos === 'reales' && (
+                                        <div className="text-xs text-gray-600 font-medium text-right">
+                                          {totalVotosPartido.toLocaleString('es-CL')} votos
+                                        </div>
+                                      )}
+                                      {/* Porcentaje de escaños */}
+                                      {tieneElectos && totalEscanosP > 0 && tipoVotos === 'reales' && (
                                         <div className="flex flex-col gap-1">
+                                          <span className="text-xs text-gray-500 font-medium">
+                                            % Escaños Obtenidos
+                                          </span>
                                           <div className="flex items-center gap-2">
                                             <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner" style={{ minWidth: '100px' }}>
                                               <div
-                                                className="h-full bg-blue-600 rounded-full transition-all duration-300 shadow-sm"
-                                                style={{ width: `${porcentaje}%` }}
+                                                className="h-full bg-green-600 rounded-full transition-all duration-300 shadow-sm"
+                                                style={{ width: `${Math.min(porcentajeEscanosPartido, 100)}%` }}
                                               />
                                             </div>
-                                            <span className="font-medium text-xs min-w-[45px] text-right whitespace-nowrap">
-                                              {porcentaje}%
+                                            <span className="font-medium text-xs min-w-[45px] text-right whitespace-nowrap text-green-700">
+                                              {porcentajeEscanosPartido.toFixed(1)}%
                                             </span>
                                           </div>
-                                          {totalVotosPartido > 0 && (
-                                            <div className="text-xs text-gray-600 font-medium text-right">
-                                              {totalVotosPartido.toLocaleString('es-CL')} votos
-                                            </div>
-                                          )}
                                         </div>
-                                      )
-                                    })()}
+                                      )}
+                                    </div>
                                   </td>
                                 </tr>
 

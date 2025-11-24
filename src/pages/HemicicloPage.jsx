@@ -140,8 +140,7 @@ const HemicicloPage = () => {
             setProgress(Math.round((procesados / totalDistritos) * 100))
             setCurrentDistrito(`Distrito ${distrito} procesado`)
           } catch (error) {
-            console.error(`Error al cargar distrito ${distrito}:`, error)
-            setEstadoDistritos(prev => ({ ...prev, [distrito]: 'error' }))
+            setEstadoDistritos(prev => ({ ...prev, [distrito]: 'error: ' + error.message }))
             procesados++
             setProgress(Math.round((procesados / totalDistritos) * 100))
           }
@@ -321,7 +320,10 @@ const HemicicloPage = () => {
           <p className="text-gray-600">
             Vista interactiva de la composición del hemiciclo parlamentario
             <span className="inline-block ml-2 px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
-              Votos de {tipoVotos === 'encuesta' ? 'Encuesta' : tipoVotos === 'reales' ? 'Reales' : 'Comparativa'}
+              Votos: {tipoVotos === 'encuesta' ? 'Encuesta' : tipoVotos === 'reales' ? 'Reales' : 'Comparativa'}
+            </span>
+            <span className="inline-block ml-2 px-3 py-1 bg-purple-100 text-purple-700 text-sm font-medium rounded-full">
+              Cálculo: {tipoCalculo === 'normal' ? 'Normal' : tipoCalculo === 'derecha' ? 'Derecha (J+K)' : 'Izquierda (A-H)'}
             </span>
           </p>
           {totalVotosNacionales > 0 && (

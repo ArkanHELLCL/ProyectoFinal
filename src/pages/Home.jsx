@@ -3,12 +3,42 @@ import { Link } from 'react-router-dom'
 import { useVotos } from '../context/VotosContext'
 
 const Home = () => {
-  const { tipoVotos, setTipoVotos, tipoCalculo, setTipoCalculo, limpiarCache, getDistritosCargadosCount } = useVotos()
+  const { tipoVotos, setTipoVotos, tipoCalculo, setTipoCalculo, limpiarCache, getDistritosCargadosPorTipo, getDistritosCargadosPorCalculo } = useVotos()
 
-  const handleLimpiarCache = () => {
-    if (window.confirm('¿Estás seguro de que deseas limpiar la caché? Esto forzará la recarga de todos los datos desde la API.')) {
-      limpiarCache()
-      alert('Caché limpiada exitosamente')
+  const conteoPorTipo = getDistritosCargadosPorTipo()
+  const conteoPorCalculoReales = getDistritosCargadosPorCalculo('reales')
+  const conteoPorCalculoEncuesta = getDistritosCargadosPorCalculo('encuesta')
+  
+  // Usar el conteo según el tipo de votos actual
+  const conteoPorCalculo = tipoVotos === 'reales' ? conteoPorCalculoReales : conteoPorCalculoEncuesta
+
+  const handleLimpiarCache = (tipo) => {
+    const tipoVotosTexto = tipoVotos === 'reales' ? 'votos reales' : 'encuesta'
+    const mensajes = {
+      'todo': '¿Estás seguro de que deseas limpiar toda la caché? Esto forzará la recarga de todos los datos desde la API.',
+      'reales': '¿Estás seguro de que deseas limpiar la caché de votos reales?',
+      'encuesta': '¿Estás seguro de que deseas limpiar la caché de encuesta?',
+      'normal': `¿Estás seguro de que deseas limpiar la caché del cálculo normal para ${tipoVotosTexto}?`,
+      'derecha': `¿Estás seguro de que deseas limpiar la caché del cálculo derecha (J+K) para ${tipoVotosTexto}?`,
+      'izquierda': `¿Estás seguro de que deseas limpiar la caché del cálculo izquierda (A-H) para ${tipoVotosTexto}?`
+    }
+    
+    if (window.confirm(mensajes[tipo])) {
+      // Para tipos de cálculo, pasar el tipoVotos actual
+      if (tipo === 'normal' || tipo === 'derecha' || tipo === 'izquierda') {
+        limpiarCache(tipo, tipoVotos)
+      } else {
+        limpiarCache(tipo)
+      }
+      const nombres = {
+        'todo': 'todos los datos',
+        'reales': 'votos reales',
+        'encuesta': 'encuesta',
+        'normal': `cálculo normal (${tipoVotosTexto})`,
+        'derecha': `cálculo derecha (${tipoVotosTexto})`,
+        'izquierda': `cálculo izquierda (${tipoVotosTexto})`
+      }
+      alert(`Caché de ${nombres[tipo]} limpiada exitosamente`)
     }
   }
 
@@ -168,18 +198,146 @@ const Home = () => {
 
         {/* Control de caché */}
         <div className="mt-6 bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">Gestión de Caché</h3>
-              <p className="text-sm text-gray-600">
-                Distritos cargados en caché: <span className="font-semibold text-indigo-600">{getDistritosCargadosCount()}/28</span>
-              </p>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Gestión de Caché</h3>
+          
+          {/* Contadores de caché */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-900">Votos Reales</p>
+                  <p className="text-2xl font-bold text-blue-600 mt-1">
+                    {conteoPorTipo.reales}<span className="text-sm text-blue-400">/28</span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleLimpiarCache('reales')}
+                  disabled={conteoPorTipo.reales === 0}
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200"
+                >
+                  Limpiar
+                </button>
+              </div>
             </div>
+
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-900">Encuesta</p>
+                  <p className="text-2xl font-bold text-purple-600 mt-1">
+                    {conteoPorTipo.encuesta}<span className="text-sm text-purple-400">/28</span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleLimpiarCache('encuesta')}
+                  disabled={conteoPorTipo.encuesta === 0}
+                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200"
+                >
+                  Limpiar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Estado de caché por tipo de cálculo */}
+          <div className="border-t border-gray-200 pt-4 mb-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">
+              Caché por Tipo de Cálculo 
+              <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${
+                tipoVotos === 'reales' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+              }`}>
+                ({tipoVotos === 'reales' ? 'Votos Reales' : 'Encuesta'})
+              </span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Normal */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-gray-900">Normal</p>
+                  {conteoPorCalculo.normal > 0 ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Cargado
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-600">
+                      Sin caché
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleLimpiarCache('normal')}
+                  disabled={conteoPorCalculo.normal === 0}
+                  className="w-full px-3 py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200"
+                >
+                  Limpiar
+                </button>
+              </div>
+
+              {/* Derecha */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-blue-900">Derecha (J+K)</p>
+                  {conteoPorCalculo.derecha > 0 ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Cargado
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-600">
+                      Sin caché
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleLimpiarCache('derecha')}
+                  disabled={conteoPorCalculo.derecha === 0}
+                  className="w-full px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200"
+                >
+                  Limpiar
+                </button>
+              </div>
+
+              {/* Izquierda */}
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-indigo-900">Izquierda (A-H)</p>
+                  {conteoPorCalculo.izquierda > 0 ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Cargado
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-600">
+                      Sin caché
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleLimpiarCache('izquierda')}
+                  disabled={conteoPorCalculo.izquierda === 0}
+                  className="w-full px-3 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200"
+                >
+                  Limpiar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Botón para limpiar todo */}
+          <div className="border-t border-gray-200 pt-4">
             <button
-              onClick={handleLimpiarCache}
-              className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow-md transition-all duration-200 hover:shadow-lg transform hover:-translate-y-0.5"
+              onClick={() => handleLimpiarCache('todo')}
+              disabled={conteoPorTipo.reales === 0 && conteoPorTipo.encuesta === 0}
+              className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg shadow-md transition-all duration-200 hover:shadow-lg"
             >
-              Limpiar Caché
+              Limpiar Toda la Caché
             </button>
           </div>
         </div>

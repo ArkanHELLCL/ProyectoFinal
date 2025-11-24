@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 
 const VotosContext = createContext()
@@ -19,8 +20,7 @@ const cargarDesdeLocalStorage = (key) => {
   try {
     const item = localStorage.getItem(key)
     return item ? JSON.parse(item) : {}
-  } catch (error) {
-    console.error('Error al cargar desde localStorage:', error)
+  } catch {
     return {}
   }
 }
@@ -29,20 +29,86 @@ const cargarDesdeLocalStorage = (key) => {
 const guardarEnLocalStorage = (key, data) => {
   try {
     localStorage.setItem(key, JSON.stringify(data))
-  } catch (error) {
-    console.error('Error al guardar en localStorage:', error)
+  } catch {
+    // Error silencioso
   }
 }
 
 export const VotosProvider = ({ children }) => {
-  const [tipoVotos, setTipoVotos] = useState('reales') // 'encuesta', 'reales' o 'comparativa'
-  const [tipoCalculo, setTipoCalculo] = useState('normal') // 'normal', 'derecha', 'izquierda'
+  // Inicializar tipoVotos desde localStorage o usar 'reales' por defecto
+  const [tipoVotos, setTipoVotos] = useState(() => {
+    try {
+      const saved = localStorage.getItem('votos_tipo_votos')
+      return saved || 'reales'
+    } catch {
+      return 'reales'
+    }
+  })
+  
+  // Inicializar tipoCalculo para reales desde localStorage o usar 'normal' por defecto
+  const [tipoCalculoReales, setTipoCalculoReales] = useState(() => {
+    try {
+      const saved = localStorage.getItem('votos_tipo_calculo_reales')
+      return saved || 'normal'
+    } catch {
+      return 'normal'
+    }
+  })
+  
+  // Inicializar tipoCalculo para encuesta desde localStorage o usar 'normal' por defecto
+  const [tipoCalculoEncuesta, setTipoCalculoEncuesta] = useState(() => {
+    try {
+      const saved = localStorage.getItem('votos_tipo_calculo_encuesta')
+      return saved || 'normal'
+    } catch {
+      return 'normal'
+    }
+  })
+  
+  // Computed: tipoCalculo actual según tipoVotos
+  const tipoCalculo = tipoVotos === 'reales' ? tipoCalculoReales : tipoCalculoEncuesta
+  
+  // Setter para tipoCalculo que actualiza el correcto según tipoVotos
+  const setTipoCalculo = (valor) => {
+    if (tipoVotos === 'reales') {
+      setTipoCalculoReales(valor)
+    } else {
+      setTipoCalculoEncuesta(valor)
+    }
+  }
   
   // Cache de datos por distrito - inicializar desde localStorage
   const [cacheDistritos, setCacheDistritos] = useState(() => cargarDesdeLocalStorage(CACHE_KEY))
   
   // Estado de carga de distritos - inicializar desde localStorage
   const [distritosEstado, setDistritosEstado] = useState(() => cargarDesdeLocalStorage(CACHE_STATE_KEY))
+
+  // Guardar tipoVotos en localStorage cuando cambie
+  useEffect(() => {
+    try {
+      localStorage.setItem('votos_tipo_votos', tipoVotos)
+    } catch {
+      // Error silencioso
+    }
+  }, [tipoVotos])
+
+  // Guardar tipoCalculoReales en localStorage cuando cambie
+  useEffect(() => {
+    try {
+      localStorage.setItem('votos_tipo_calculo_reales', tipoCalculoReales)
+    } catch {
+      // Error silencioso
+    }
+  }, [tipoCalculoReales])
+
+  // Guardar tipoCalculoEncuesta en localStorage cuando cambie
+  useEffect(() => {
+    try {
+      localStorage.setItem('votos_tipo_calculo_encuesta', tipoCalculoEncuesta)
+    } catch {
+      // Error silencioso
+    }
+  }, [tipoCalculoEncuesta])
 
   // Guardar cache en localStorage cuando cambie
   useEffect(() => {
@@ -106,8 +172,7 @@ export const VotosProvider = ({ children }) => {
 
       // Retornar los datos directamente, no esperar al estado
       return datosGuardar
-    } catch (error) {
-      console.error(`Error al cargar distrito ${distrito}:`, error)
+    } catch {
       setDistritosEstado(prev => ({ ...prev, [cacheKey]: 'error' }))
       return null
     }
@@ -147,12 +212,102 @@ export const VotosProvider = ({ children }) => {
     return cargados
   }, [distritosEstado, tipoVotos, tipoCalculo, getCacheKey])
 
-  const limpiarCache = useCallback(() => {
-    setCacheDistritos({})
-    setDistritosEstado({})
-    localStorage.removeItem(CACHE_KEY)
-    localStorage.removeItem(CACHE_STATE_KEY)
-  }, [])
+  const getDistritosCargadosPorTipo = useCallback((tipoCalculoParam = tipoCalculo) => {
+    const totalDistritos = 28
+    let cargadosEncuesta = 0
+    let cargadosReales = 0
+    
+    for (let distrito = 1; distrito <= totalDistritos; distrito++) {
+      const cacheKeyEncuesta = getCacheKey(distrito, 'encuesta', tipoCalculoParam)
+      const cacheKeyReales = getCacheKey(distrito, 'reales', tipoCalculoParam)
+      
+      if (distritosEstado[cacheKeyEncuesta] === 'loaded') {
+        cargadosEncuesta++
+      }
+      if (distritosEstado[cacheKeyReales] === 'loaded') {
+        cargadosReales++
+      }
+    }
+    
+    return { encuesta: cargadosEncuesta, reales: cargadosReales }
+  }, [distritosEstado, tipoCalculo, getCacheKey])
+
+  const getDistritosCargadosPorCalculo = useCallback((tipoVotosParam) => {
+    const totalDistritos = 28
+    const resultados = {
+      normal: 0,
+      derecha: 0,
+      izquierda: 0
+    }
+    
+    for (let distrito = 1; distrito <= totalDistritos; distrito++) {
+      ['normal', 'derecha', 'izquierda'].forEach(tipoCalc => {
+        const cacheKey = getCacheKey(distrito, tipoVotosParam, tipoCalc)
+        
+        if (distritosEstado[cacheKey] === 'loaded') {
+          resultados[tipoCalc]++
+        }
+      })
+    }
+    
+    return resultados
+  }, [distritosEstado, getCacheKey])
+
+  const limpiarCache = useCallback((tipo = 'todo', tipoVotosParam = null) => {
+    if (tipo === 'todo') {
+      setCacheDistritos({})
+      setDistritosEstado({})
+      localStorage.removeItem(CACHE_KEY)
+      localStorage.removeItem(CACHE_STATE_KEY)
+    } else if (tipo === 'derecha' || tipo === 'izquierda' || tipo === 'normal') {
+      // Limpiar solo las entradas del tipoCalculo especificado para un tipoVotos específico
+      const tipoVotosALimpiar = tipoVotosParam || tipoVotos
+      setCacheDistritos(prev => {
+        const nuevo = {}
+        Object.keys(prev).forEach(key => {
+          // Key format: distrito_tipoVotos_tipoCalculo
+          // Solo eliminar si coincide tipoVotos Y tipoCalculo
+          if (!(key.includes(`_${tipoVotosALimpiar}_`) && key.endsWith(`_${tipo}`))) {
+            nuevo[key] = prev[key]
+          }
+        })
+        guardarEnLocalStorage(CACHE_KEY, nuevo)
+        return nuevo
+      })
+      setDistritosEstado(prev => {
+        const nuevo = {}
+        Object.keys(prev).forEach(key => {
+          if (!(key.includes(`_${tipoVotosALimpiar}_`) && key.endsWith(`_${tipo}`))) {
+            nuevo[key] = prev[key]
+          }
+        })
+        guardarEnLocalStorage(CACHE_STATE_KEY, nuevo)
+        return nuevo
+      })
+    } else {
+      // Limpiar solo las entradas del tipoVotos especificado (reales/encuesta)
+      setCacheDistritos(prev => {
+        const nuevo = {}
+        Object.keys(prev).forEach(key => {
+          if (!key.includes(`_${tipo}_`)) {
+            nuevo[key] = prev[key]
+          }
+        })
+        guardarEnLocalStorage(CACHE_KEY, nuevo)
+        return nuevo
+      })
+      setDistritosEstado(prev => {
+        const nuevo = {}
+        Object.keys(prev).forEach(key => {
+          if (!key.includes(`_${tipo}_`)) {
+            nuevo[key] = prev[key]
+          }
+        })
+        guardarEnLocalStorage(CACHE_STATE_KEY, nuevo)
+        return nuevo
+      })
+    }
+  }, [tipoVotos])
 
   return (
     <VotosContext.Provider value={{ 
@@ -165,6 +320,8 @@ export const VotosProvider = ({ children }) => {
       getDistritoData,
       getDistritoEstado,
       getDistritosCargadosCount,
+      getDistritosCargadosPorTipo,
+      getDistritosCargadosPorCalculo,
       limpiarCache
     }}>
       {children}
