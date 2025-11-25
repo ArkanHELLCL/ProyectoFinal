@@ -479,7 +479,7 @@ function ComparativaDistritos() {
                                   {getPactoNombre(lista.codigo)}
                                 </span>
                                 <svg
-                                  className={`w-4 h-4 flex-shrink-0 transition-transform ${
+                                  className={`w-4 h-4 shrink-0 transition-transform ${
                                     pactoExpandido === lista.codigo ? 'transform rotate-180' : ''
                                   }`}
                                   fill="none"
@@ -590,11 +590,11 @@ function ComparativaDistritos() {
                                             <div className="flex items-start justify-between mb-1">
                                               <div className="flex items-center gap-2">
                                                 {esElecto ? (
-                                                  <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                  <svg className="w-5 h-5 text-green-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                                                   </svg>
                                                 ) : (
-                                                  <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                  <svg className="w-5 h-5 text-red-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
                                                   </svg>
                                                 )}
@@ -710,7 +710,7 @@ function ComparativaDistritos() {
                                   {getPartidoNombre(partido.codigo)}
                                 </span>
                                 <svg
-                                  className={`w-4 h-4 flex-shrink-0 transition-transform ${
+                                  className={`w-4 h-4 shrink-0 transition-transform ${
                                     partidoExpandido === partido.codigo ? 'transform rotate-180' : ''
                                   }`}
                                   fill="none"
@@ -802,7 +802,7 @@ function ComparativaDistritos() {
                                       >
                                         <div className="flex items-start gap-3">
                                           {/* Foto del candidato */}
-                                          <div className="flex-shrink-0">
+                                          <div className="shrink-0">
                                             {candidato.id_foto ? (
                                               <img
                                                 src={`https://static.emol.cl/emol50/especiales/img/2025/elecciones/dip/${candidato.id_foto}.jpg`}
@@ -826,11 +826,11 @@ function ComparativaDistritos() {
                                             <div className="flex items-start justify-between mb-1">
                                               <div className="flex items-center gap-2">
                                                 {esElecto ? (
-                                                  <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                  <svg className="w-5 h-5 text-green-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                                                   </svg>
                                                 ) : (
-                                                  <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                  <svg className="w-5 h-5 text-red-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
                                                   </svg>
                                                 )}
@@ -933,7 +933,7 @@ function ComparativaDistritos() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 py-8 px-4">
+    <div className="min-h-screen bg-linear-to-br from-purple-50 via-blue-50 to-indigo-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
@@ -1068,7 +1068,7 @@ function ComparativaDistritos() {
                   {/* Grid de tarjetas de resumen */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     {/* Total de Electos */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border-l-4 border-blue-500">
+                    <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-lg p-4 border-l-4 border-blue-500">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-sm font-medium text-gray-600">Total Electos</h3>
                         <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -1093,7 +1093,7 @@ function ComparativaDistritos() {
                     </div>
 
                     {/* Diferencia de Votos */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-l-4 border-green-500">
+                    <div className="bg-linear-to-br from-green-50 to-green-100 rounded-lg p-4 border-l-4 border-green-500">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-sm font-medium text-gray-600">Diferencia Votos</h3>
                         <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -1112,7 +1112,7 @@ function ComparativaDistritos() {
                     </div>
 
                     {/* Sorpresas */}
-                    <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-4 border-l-4 border-amber-500">
+                    <div className="bg-linear-to-br from-amber-50 to-amber-100 rounded-lg p-4 border-l-4 border-amber-500">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-sm font-medium text-gray-600">Sorpresas</h3>
                         <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
@@ -1133,7 +1133,7 @@ function ComparativaDistritos() {
 
                     {/* Mayor Cambio */}
                     {mayorGanador && (
-                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border-l-4 border-purple-500">
+                      <div className="bg-linear-to-br from-purple-50 to-purple-100 rounded-lg p-4 border-l-4 border-purple-500">
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="text-sm font-medium text-gray-600">Mayor Cambio</h3>
                           <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
