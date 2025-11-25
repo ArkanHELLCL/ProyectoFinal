@@ -447,20 +447,25 @@ const ComparativaHemiciclo = () => {
   return (
     <div className="min-h-screen bg-linear-to-br from-purple-50 to-indigo-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <div className="flex items-center mb-6">
+        <header className="text-center mb-8">
+          <div className="flex items-center justify-center gap-4 mb-4">
             <Link
               to="/"
-              className="inline-flex items-center text-purple-600 hover:text-purple-800 transition-colors"
+              className="flex items-center text-indigo-600 hover:text-indigo-800 transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
               <span className="ml-2 font-medium">Volver</span>
             </Link>
-            <h1 className="text-4xl font-bold text-gray-800 ml-auto">Comparativa Electoral</h1>
+            <h1 className="text-4xl font-bold text-gray-800">Comparativa de Hemiciclos</h1>
           </div>
-          <p className="text-gray-600">Comparación entre votos de encuesta y votos reales</p>
+          <p className="text-gray-600">
+            Comparación lado a lado de encuesta vs votos reales - Visualización completa del hemiciclo
+            <span className="inline-block ml-2 px-3 py-1 bg-purple-100 text-purple-700 text-sm font-medium rounded-full">
+              Cálculo: {tipoCalculo === 'normal' ? 'Normal' : tipoCalculo === 'derecha' ? 'Derecha (J+K)' : 'Izquierda (A-H)'}
+            </span>
+          </p>
         </header>
 
         {/* Estadísticas Generales */}

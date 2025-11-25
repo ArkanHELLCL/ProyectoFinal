@@ -187,7 +187,7 @@ const Home = () => {
 
           {/* Tarjeta para Hemiciclo */}
           <Link
-            to={modoComparativa ? '/comparativa' : '/hemiciclo'}
+            to={modoComparativa ? '/comparativa-hemiciclo' : '/hemiciclo'}
             className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <div className="flex flex-col items-center text-center">

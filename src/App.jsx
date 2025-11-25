@@ -4,7 +4,7 @@ import Distritos from './pages/Distritos'
 import ComparativaDistritos from './pages/ComparativaDistritos'
 import ComparativaPactosFicticiosDistritos from './pages/ComparativaPactosFicticiosDistritos'
 import HemicicloPage from './pages/HemicicloPage'
-import Comparativa from './pages/Comparativa'
+import ComparativaHemiciclo from './pages/ComparativaHemiciclo'
 import ComparativaPactosFicticiosHemiciclo from './pages/ComparativaPactosFicticiosHemiciclo'
 import NotFound from './pages/NotFound'
 
@@ -16,7 +16,7 @@ function App() {
       <Route path="/comparativa-distritos" element={<ComparativaDistritos />} />
       <Route path="/comparativa-pactos-ficticios-distritos" element={<ComparativaPactosFicticiosDistritos />} />
       <Route path="/hemiciclo" element={<HemicicloPage />} />
-      <Route path="/comparativa" element={<Comparativa />} />
+      <Route path="/comparativa-hemiciclo" element={<ComparativaHemiciclo />} />
       <Route path="/comparativa-pactos-ficticios-hemiciclo" element={<ComparativaPactosFicticiosHemiciclo />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
