@@ -295,7 +295,7 @@ const Home = () => {
         <div className="grid md:grid-cols-2 gap-6 mb-12">
           {/* Tarjeta para Análisis de Distritos con pactos ficticios */}
           <Link
-            to={`/comparativa-distritos?calculo1=${tipoCalculo1}&calculo2=${tipoCalculo2}`}
+            to={`/comparativa-pactos-ficticios-distritos?calculo1=${tipoCalculo1}&calculo2=${tipoCalculo2}`}
             className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg shadow-lg p-8 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-orange-200"
           >
             <div className="flex flex-col items-center text-center">
@@ -319,7 +319,7 @@ const Home = () => {
 
           {/* Tarjeta para Hemiciclo con pactos ficticios */}
           <Link
-            to={`/comparativa?calculo1=${tipoCalculo1}&calculo2=${tipoCalculo2}`}
+            to={`/comparativa-pactos-ficticios-hemiciclo?calculo1=${tipoCalculo1}&calculo2=${tipoCalculo2}`}
             className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-lg shadow-lg p-8 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-rose-200"
           >
             <div className="flex flex-col items-center text-center">

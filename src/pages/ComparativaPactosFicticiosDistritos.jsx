@@ -2,27 +2,26 @@ import React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 /**
- * ComparativaPactosFicticiosHemiciclo
+ * ComparativaPactosFicticiosDistritos
  * 
- * Este componente muestra la comparación de hemiciclos entre dos tipos de cálculo
+ * Este componente muestra la comparación por distritos entre dos tipos de cálculo
  * de pactos ficticios (JK = Toda la Derecha, AH = Toda la Izquierda).
  * 
  * Características:
  * - Recibe dos parámetros de URL: calculo1 y calculo2
  * - Cada cálculo puede ser: 'normal', 'derecha' (JK), o 'izquierda' (AH)
- * - Muestra dos hemiciclos lado a lado para comparación visual
- * - Incluye estadísticas comparativas por partido y pacto
+ * - Muestra tablas comparativas por distrito con candidatos electos
+ * - Incluye análisis de diferencias entre ambos cálculos
  * - Usa filtros independientes (no relacionados con los filtros globales del contexto)
  * 
  * Flujo de datos:
  * 1. Extrae tipoCalculo1 y tipoCalculo2 de los parámetros URL
- * 2. Carga datos de todos los 28 distritos con tipo 'reales' para cada cálculo
- * 3. Combina los candidatos electos de todos los distritos
- * 4. Genera hemiciclos con el componente Hemiciclo
- * 5. Calcula y muestra diferencias estadísticas
+ * 2. Carga datos de 'reales' con cada tipo de cálculo desde VotosContext
+ * 3. Procesa y compara los resultados por pacto y partido
+ * 4. Muestra solo candidatos electos con sus tarjetas y fotos
  */
 
-const ComparativaPactosFicticiosHemiciclo = () => {
+const ComparativaPactosFicticiosDistritos = () => {
   const [searchParams] = useSearchParams()
   const tipoCalculo1 = searchParams.get('calculo1') || 'normal'
   const tipoCalculo2 = searchParams.get('calculo2') || 'normal'
@@ -41,10 +40,10 @@ const ComparativaPactosFicticiosHemiciclo = () => {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Comparativa de Pactos Ficticios - Hemiciclo
+            Comparativa de Pactos Ficticios por Distrito
           </h1>
           <p className="text-gray-600 mb-4">
-            Visualización comparativa de la composición del congreso
+            Análisis comparativo entre dos configuraciones de cálculo
           </p>
           
           <div className="flex items-center justify-center gap-4 flex-wrap mb-4">
@@ -74,9 +73,9 @@ const ComparativaPactosFicticiosHemiciclo = () => {
         <div className="bg-white rounded-lg shadow-md p-8">
           <div className="text-center">
             <div className="mb-6">
-              <div className="inline-block p-4 bg-rose-100 rounded-full mb-4">
-                <svg className="w-16 h-16 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              <div className="inline-block p-4 bg-indigo-100 rounded-full mb-4">
+                <svg className="w-16 h-16 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
               </div>
             </div>
@@ -86,33 +85,29 @@ const ComparativaPactosFicticiosHemiciclo = () => {
             </h2>
             
             <div className="max-w-2xl mx-auto text-left space-y-4 text-gray-700">
-              <p className="text-lg font-semibold text-rose-600">
+              <p className="text-lg font-semibold text-indigo-600">
                 Funcionalidad Planificada:
               </p>
               
               <ul className="list-disc list-inside space-y-2 ml-4">
-                <li>Carga de datos de todos los 28 distritos para ambos tipos de cálculo</li>
-                <li>Barras de progreso durante la carga (una por cada lista)</li>
-                <li>Grid con dos hemiciclos lado a lado:
+                <li>Selector de distrito con dropdown</li>
+                <li>Carga de datos para ambos tipos de cálculo desde el contexto (verificando cache)</li>
+                <li>Tablas comparativas lado a lado (Lista 1 vs Lista 2)</li>
+                <li>Agrupación por Pacto y por Partido con acordeones</li>
+                <li>Tarjetas de candidatos electos con:
                   <ul className="list-circle list-inside ml-6 mt-1">
-                    <li>Hemiciclo izquierdo: Lista 1 (color púrpura)</li>
-                    <li>Hemiciclo derecho: Lista 2 (color azul)</li>
+                    <li>Foto del candidato</li>
+                    <li>Nombre con truncamiento</li>
+                    <li>Badges de pacto y partido</li>
+                    <li>Barra de progreso de votos</li>
                   </ul>
                 </li>
-                <li>Control para colorear por partido o por pacto</li>
-                <li>Sección de estadísticas comparativas:
-                  <ul className="list-circle list-inside ml-6 mt-1">
-                    <li>Resumen general (total escaños y diferencia)</li>
-                    <li>Tabla de diferencias por partido</li>
-                    <li>Tabla de diferencias por pacto</li>
-                    <li>Análisis de porcentajes</li>
-                  </ul>
-                </li>
-                <li>Total de escaños por hemiciclo</li>
+                <li>Sección de análisis con diferencias entre ambos cálculos</li>
+                <li>Leyendas de colores para pactos y partidos</li>
               </ul>
 
               <p className="text-sm text-gray-500 italic mt-6 pt-4 border-t border-gray-200">
-                Este componente es completamente independiente de Comparativa.jsx
+                Este componente es completamente independiente de ComparativaDistritos.jsx
                 y utiliza sus propios filtros basados en parámetros URL.
               </p>
             </div>
@@ -123,4 +118,4 @@ const ComparativaPactosFicticiosHemiciclo = () => {
   )
 }
 
-export default ComparativaPactosFicticiosHemiciclo
+export default ComparativaPactosFicticiosDistritos
