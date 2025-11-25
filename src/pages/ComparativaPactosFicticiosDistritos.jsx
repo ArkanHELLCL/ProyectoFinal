@@ -56,16 +56,22 @@ const ComparativaPactosFicticiosDistritos = () => {
   const { cargarDistrito, getDistritoData } = useVotos()
   
   // Estados para Lista 1
+  // eslint-disable-next-line no-unused-vars
   const [candidatosLista1, setCandidatosLista1] = useState([])
+  // eslint-disable-next-line no-unused-vars
   const [votosAcumuladosLista1, setVotosAcumuladosLista1] = useState([])
+  // eslint-disable-next-line no-unused-vars
   const [partidosAcumuladosLista1, setPartidosAcumuladosLista1] = useState([])
   const [candidatosElectosLista1, setCandidatosElectosLista1] = useState([])
   const [pactoExpandidoLista1, setPactoExpandidoLista1] = useState(null)
   const [partidoExpandidoLista1, setPartidoExpandidoLista1] = useState(null)
   
   // Estados para Lista 2
+  // eslint-disable-next-line no-unused-vars
   const [candidatosLista2, setCandidatosLista2] = useState([])
+  // eslint-disable-next-line no-unused-vars
   const [votosAcumuladosLista2, setVotosAcumuladosLista2] = useState([])
+  // eslint-disable-next-line no-unused-vars
   const [partidosAcumuladosLista2, setPartidosAcumuladosLista2] = useState([])
   const [candidatosElectosLista2, setCandidatosElectosLista2] = useState([])
   const [pactoExpandidoLista2, setPactoExpandidoLista2] = useState(null)
@@ -77,8 +83,11 @@ const ComparativaPactosFicticiosDistritos = () => {
   const [escanos, setEscanos] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingVotos, setLoadingVotos] = useState(false)
+  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null)
+  // eslint-disable-next-line no-unused-vars
   const [tipoTabla, setTipoTabla] = useState('pacto')
+  const [datosDistrito, setDatosDistrito] = useState(null)
 
   const getTipoCalculoNombre = (tipo) => {
     const nombres = {
@@ -115,6 +124,7 @@ const ComparativaPactosFicticiosDistritos = () => {
     return escano ? escano.escanos : null
   }
 
+  // eslint-disable-next-line no-unused-vars
   const getPactoNombre = (codigo) => {
     return PACTO_NOMBRES[codigo] || codigo
   }
@@ -172,18 +182,22 @@ const ComparativaPactosFicticiosDistritos = () => {
     return colores[codigo] || "bg-gray-200 text-gray-800"
   }
 
+  // eslint-disable-next-line no-unused-vars
   const togglePactoLista1 = (pacto) => {
     setPactoExpandidoLista1(pactoExpandidoLista1 === pacto ? null : pacto)
   }
 
+  // eslint-disable-next-line no-unused-vars
   const togglePartidoLista1 = (partido) => {
     setPartidoExpandidoLista1(partidoExpandidoLista1 === partido ? null : partido)
   }
 
+  // eslint-disable-next-line no-unused-vars
   const togglePactoLista2 = (pacto) => {
     setPactoExpandidoLista2(pactoExpandidoLista2 === pacto ? null : pacto)
   }
 
+  // eslint-disable-next-line no-unused-vars
   const togglePartidoLista2 = (partido) => {
     setPartidoExpandidoLista2(partidoExpandidoLista2 === partido ? null : partido)
   }
@@ -197,6 +211,7 @@ const ComparativaPactosFicticiosDistritos = () => {
     if (selectedDistrito) {
       fetchCandidatosDistrito(selectedDistrito)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDistrito, tipoCalculo1, tipoCalculo2])
 
   const fetchCandidatosDistrito = async (distrito) => {
@@ -213,6 +228,11 @@ const ComparativaPactosFicticiosDistritos = () => {
       let dataLista2 = getDistritoData(distrito, 'reales', tipoCalculo2)
       if (!dataLista2) {
         dataLista2 = await cargarDistrito(distrito, 'reales', tipoCalculo2)
+      }
+
+      // Guardar datos del distrito (usar cualquiera de las dos listas ya que votos_validos es el mismo)
+      if (dataLista1) {
+        setDatosDistrito(dataLista1)
       }
 
       // Procesar datos de Lista 1
@@ -367,7 +387,7 @@ const ComparativaPactosFicticiosDistritos = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-purple-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Cargando...</p>
@@ -611,6 +631,17 @@ const ComparativaPactosFicticiosDistritos = () => {
                             <p className="text-sm text-gray-600 truncate" title={getPartidoNombre(candidato.partido)}>
                               {getPartidoNombre(candidato.partido)}
                             </p>
+                            
+                            {candidato.votos_reales_cantidad > 0 && (
+                              <div className="mt-2 pt-2 border-t border-gray-200">
+                                <div className="flex items-baseline justify-between">
+                                  <span className="text-xs text-gray-500">Votos:</span>
+                                  <span className="text-sm font-semibold text-purple-600">
+                                    {candidato.votos_reales_cantidad.toLocaleString('es-CL')}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -621,6 +652,134 @@ const ComparativaPactosFicticiosDistritos = () => {
                     No hay candidatos electos para mostrar
                   </div>
                 )}
+
+                {/* Consolidado Lista 1 */}
+                {candidatosElectosLista1.length > 0 && selectedDistrito && (() => {
+                  const totalVotosDistrito = datosDistrito?.votos_validos || 0
+                  const totalEscanos = candidatosElectosLista1.length
+                  
+                  // Consolidado por Pacto
+                  const consolidadoPacto = {}
+                  candidatosElectosLista1.forEach(c => {
+                    if (!consolidadoPacto[c.pacto]) {
+                      consolidadoPacto[c.pacto] = { votos: 0, escanos: 0 }
+                    }
+                    consolidadoPacto[c.pacto].votos += c.votos_reales_cantidad || 0
+                    consolidadoPacto[c.pacto].escanos += 1
+                  })
+
+                  // Consolidado por Partido
+                  const consolidadoPartido = {}
+                  candidatosElectosLista1.forEach(c => {
+                    if (!consolidadoPartido[c.partido]) {
+                      consolidadoPartido[c.partido] = { votos: 0, escanos: 0 }
+                    }
+                    consolidadoPartido[c.partido].votos += c.votos_reales_cantidad || 0
+                    consolidadoPartido[c.partido].escanos += 1
+                  })
+
+                  const totalVotosElectos = candidatosElectosLista1.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
+
+                  return (
+                    <div className="mt-6 space-y-4">
+                      {/* Consolidado por Pacto */}
+                      <div className="border-t-2 border-purple-200 pt-4">
+                        <h3 className="text-lg font-bold text-purple-800 mb-3">Consolidado por Pacto</h3>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-sm">
+                            <thead className="bg-purple-50">
+                              <tr>
+                                <th className="px-3 py-2 text-left font-semibold text-purple-900">Pacto</th>
+                                <th className="px-3 py-2 text-right font-semibold text-purple-900">Escaños</th>
+                                <th className="px-3 py-2 text-right font-semibold text-purple-900">% Escaños</th>
+                                <th className="px-3 py-2 text-right font-semibold text-purple-900">Votos</th>
+                                <th className="px-3 py-2 text-right font-semibold text-purple-900">% Votos</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(consolidadoPacto)
+                                .sort((a, b) => b[1].escanos - a[1].escanos)
+                                .map(([pacto, data]) => (
+                                <tr key={pacto} className="border-b border-gray-200 hover:bg-purple-25">
+                                  <td className="px-3 py-2">
+                                    <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${getPactoColor(pacto)}`}>
+                                      {pacto}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-2 text-right font-medium">{data.escanos}</td>
+                                  <td className="px-3 py-2 text-right text-purple-600 font-medium">
+                                    {((data.escanos / totalEscanos) * 100).toFixed(1)}%
+                                  </td>
+                                  <td className="px-3 py-2 text-right">{data.votos.toLocaleString('es-CL')}</td>
+                                  <td className="px-3 py-2 text-right text-purple-600">
+                                    {totalVotosDistrito > 0 ? ((data.votos / totalVotosDistrito) * 100).toFixed(2) : '0.00'}%
+                                  </td>
+                                </tr>
+                              ))}
+                              <tr className="bg-purple-100 font-bold">
+                                <td className="px-3 py-2">TOTAL</td>
+                                <td className="px-3 py-2 text-right">{totalEscanos}</td>
+                                <td className="px-3 py-2 text-right">100%</td>
+                                <td className="px-3 py-2 text-right">{totalVotosElectos.toLocaleString('es-CL')}</td>
+                                <td className="px-3 py-2 text-right">
+                                  {totalVotosDistrito > 0 ? ((totalVotosElectos / totalVotosDistrito) * 100).toFixed(2) : '0.00'}%
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Consolidado por Partido */}
+                      <div className="border-t-2 border-purple-200 pt-4">
+                        <h3 className="text-lg font-bold text-purple-800 mb-3">Consolidado por Partido</h3>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-sm">
+                            <thead className="bg-purple-50">
+                              <tr>
+                                <th className="px-3 py-2 text-left font-semibold text-purple-900">Partido</th>
+                                <th className="px-3 py-2 text-right font-semibold text-purple-900">Escaños</th>
+                                <th className="px-3 py-2 text-right font-semibold text-purple-900">% Escaños</th>
+                                <th className="px-3 py-2 text-right font-semibold text-purple-900">Votos</th>
+                                <th className="px-3 py-2 text-right font-semibold text-purple-900">% Votos</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(consolidadoPartido)
+                                .sort((a, b) => b[1].escanos - a[1].escanos)
+                                .map(([partido, data]) => (
+                                <tr key={partido} className="border-b border-gray-200 hover:bg-purple-25">
+                                  <td className="px-3 py-2">
+                                    <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${getPartidoColor(partido)}`}>
+                                      {partido}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-2 text-right font-medium">{data.escanos}</td>
+                                  <td className="px-3 py-2 text-right text-purple-600 font-medium">
+                                    {((data.escanos / totalEscanos) * 100).toFixed(1)}%
+                                  </td>
+                                  <td className="px-3 py-2 text-right">{data.votos.toLocaleString('es-CL')}</td>
+                                  <td className="px-3 py-2 text-right text-purple-600">
+                                    {totalVotosDistrito > 0 ? ((data.votos / totalVotosDistrito) * 100).toFixed(2) : '0.00'}%
+                                  </td>
+                                </tr>
+                              ))}
+                              <tr className="bg-purple-100 font-bold">
+                                <td className="px-3 py-2">TOTAL</td>
+                                <td className="px-3 py-2 text-right">{totalEscanos}</td>
+                                <td className="px-3 py-2 text-right">100%</td>
+                                <td className="px-3 py-2 text-right">{totalVotosElectos.toLocaleString('es-CL')}</td>
+                                <td className="px-3 py-2 text-right">
+                                  {totalVotosDistrito > 0 ? ((totalVotosElectos / totalVotosDistrito) * 100).toFixed(2) : '0.00'}%
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* Lista 2 - Electos */}
@@ -681,6 +840,17 @@ const ComparativaPactosFicticiosDistritos = () => {
                             <p className="text-sm text-gray-600 truncate" title={getPartidoNombre(candidato.partido)}>
                               {getPartidoNombre(candidato.partido)}
                             </p>
+                            
+                            {candidato.votos_reales_cantidad > 0 && (
+                              <div className="mt-2 pt-2 border-t border-gray-200">
+                                <div className="flex items-baseline justify-between">
+                                  <span className="text-xs text-gray-500">Votos:</span>
+                                  <span className="text-sm font-semibold text-blue-600">
+                                    {candidato.votos_reales_cantidad.toLocaleString('es-CL')}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -691,6 +861,134 @@ const ComparativaPactosFicticiosDistritos = () => {
                     No hay candidatos electos para mostrar
                   </div>
                 )}
+
+                {/* Consolidado Lista 2 */}
+                {candidatosElectosLista2.length > 0 && selectedDistrito && (() => {
+                  const totalVotosDistrito = datosDistrito?.votos_validos || 0
+                  const totalEscanos = candidatosElectosLista2.length
+                  
+                  // Consolidado por Pacto
+                  const consolidadoPacto = {}
+                  candidatosElectosLista2.forEach(c => {
+                    if (!consolidadoPacto[c.pacto]) {
+                      consolidadoPacto[c.pacto] = { votos: 0, escanos: 0 }
+                    }
+                    consolidadoPacto[c.pacto].votos += c.votos_reales_cantidad || 0
+                    consolidadoPacto[c.pacto].escanos += 1
+                  })
+
+                  // Consolidado por Partido
+                  const consolidadoPartido = {}
+                  candidatosElectosLista2.forEach(c => {
+                    if (!consolidadoPartido[c.partido]) {
+                      consolidadoPartido[c.partido] = { votos: 0, escanos: 0 }
+                    }
+                    consolidadoPartido[c.partido].votos += c.votos_reales_cantidad || 0
+                    consolidadoPartido[c.partido].escanos += 1
+                  })
+
+                  const totalVotosElectos = candidatosElectosLista2.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
+
+                  return (
+                    <div className="mt-6 space-y-4">
+                      {/* Consolidado por Pacto */}
+                      <div className="border-t-2 border-blue-200 pt-4">
+                        <h3 className="text-lg font-bold text-blue-800 mb-3">Consolidado por Pacto</h3>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-sm">
+                            <thead className="bg-blue-50">
+                              <tr>
+                                <th className="px-3 py-2 text-left font-semibold text-blue-900">Pacto</th>
+                                <th className="px-3 py-2 text-right font-semibold text-blue-900">Escaños</th>
+                                <th className="px-3 py-2 text-right font-semibold text-blue-900">% Escaños</th>
+                                <th className="px-3 py-2 text-right font-semibold text-blue-900">Votos</th>
+                                <th className="px-3 py-2 text-right font-semibold text-blue-900">% Votos</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(consolidadoPacto)
+                                .sort((a, b) => b[1].escanos - a[1].escanos)
+                                .map(([pacto, data]) => (
+                                <tr key={pacto} className="border-b border-gray-200 hover:bg-blue-25">
+                                  <td className="px-3 py-2">
+                                    <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${getPactoColor(pacto)}`}>
+                                      {pacto}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-2 text-right font-medium">{data.escanos}</td>
+                                  <td className="px-3 py-2 text-right text-blue-600 font-medium">
+                                    {((data.escanos / totalEscanos) * 100).toFixed(1)}%
+                                  </td>
+                                  <td className="px-3 py-2 text-right">{data.votos.toLocaleString('es-CL')}</td>
+                                  <td className="px-3 py-2 text-right text-blue-600">
+                                    {totalVotosDistrito > 0 ? ((data.votos / totalVotosDistrito) * 100).toFixed(2) : '0.00'}%
+                                  </td>
+                                </tr>
+                              ))}
+                              <tr className="bg-blue-100 font-bold">
+                                <td className="px-3 py-2">TOTAL</td>
+                                <td className="px-3 py-2 text-right">{totalEscanos}</td>
+                                <td className="px-3 py-2 text-right">100%</td>
+                                <td className="px-3 py-2 text-right">{totalVotosElectos.toLocaleString('es-CL')}</td>
+                                <td className="px-3 py-2 text-right">
+                                  {totalVotosDistrito > 0 ? ((totalVotosElectos / totalVotosDistrito) * 100).toFixed(2) : '0.00'}%
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Consolidado por Partido */}
+                      <div className="border-t-2 border-blue-200 pt-4">
+                        <h3 className="text-lg font-bold text-blue-800 mb-3">Consolidado por Partido</h3>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-sm">
+                            <thead className="bg-blue-50">
+                              <tr>
+                                <th className="px-3 py-2 text-left font-semibold text-blue-900">Partido</th>
+                                <th className="px-3 py-2 text-right font-semibold text-blue-900">Escaños</th>
+                                <th className="px-3 py-2 text-right font-semibold text-blue-900">% Escaños</th>
+                                <th className="px-3 py-2 text-right font-semibold text-blue-900">Votos</th>
+                                <th className="px-3 py-2 text-right font-semibold text-blue-900">% Votos</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(consolidadoPartido)
+                                .sort((a, b) => b[1].escanos - a[1].escanos)
+                                .map(([partido, data]) => (
+                                <tr key={partido} className="border-b border-gray-200 hover:bg-blue-25">
+                                  <td className="px-3 py-2">
+                                    <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${getPartidoColor(partido)}`}>
+                                      {partido}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-2 text-right font-medium">{data.escanos}</td>
+                                  <td className="px-3 py-2 text-right text-blue-600 font-medium">
+                                    {((data.escanos / totalEscanos) * 100).toFixed(1)}%
+                                  </td>
+                                  <td className="px-3 py-2 text-right">{data.votos.toLocaleString('es-CL')}</td>
+                                  <td className="px-3 py-2 text-right text-blue-600">
+                                    {totalVotosDistrito > 0 ? ((data.votos / totalVotosDistrito) * 100).toFixed(2) : '0.00'}%
+                                  </td>
+                                </tr>
+                              ))}
+                              <tr className="bg-blue-100 font-bold">
+                                <td className="px-3 py-2">TOTAL</td>
+                                <td className="px-3 py-2 text-right">{totalEscanos}</td>
+                                <td className="px-3 py-2 text-right">100%</td>
+                                <td className="px-3 py-2 text-right">{totalVotosElectos.toLocaleString('es-CL')}</td>
+                                <td className="px-3 py-2 text-right">
+                                  {totalVotosDistrito > 0 ? ((totalVotosElectos / totalVotosDistrito) * 100).toFixed(2) : '0.00'}%
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           </>

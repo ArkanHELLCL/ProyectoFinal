@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEscanos = 155, colorearPor = 'pacto', totalVotosNacionales = 0 }) => {
+const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEscanos = 155, colorearPor = 'pacto', totalVotosNacionales = 0, tooltipPosition = 'right' }) => {
   const [hoveredSeat, setHoveredSeat] = useState(null)
 
   // Configuración del hemiciclo
@@ -288,14 +288,48 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
 
         if (!hoveredPos) return null
 
+        // Configuración de posición según prop
+        const isBottomPosition = tooltipPosition === 'bottom'
+        
+        const tooltipStyle = isBottomPosition ? {
+          top: '100%',
+          marginTop: '10px'
+        } : {
+          left: 'calc(100% - 60px)',
+          top: '0'
+        }
+
+        const tooltipClassName = isBottomPosition 
+          ? "absolute left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-xl z-10 pointer-events-none"
+          : "absolute bg-gray-900 text-white px-4 py-2 rounded-lg shadow-xl z-10 pointer-events-none"
+
+        const arrowStyle = isBottomPosition ? {
+          left: '50%',
+          transform: 'translateX(-50%)',
+          top: '-8px',
+          width: 0,
+          height: 0,
+          borderLeft: '8px solid transparent',
+          borderRight: '8px solid transparent',
+          borderBottom: '8px solid #111827'
+        } : {
+          left: '-8px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: 0,
+          height: 0,
+          borderTop: '8px solid transparent',
+          borderBottom: '8px solid transparent',
+          borderRight: '8px solid #111827'
+        }
+
         // Tooltip para escaños vacíos
         if (!hoveredPos.hasCandidate) {
           return (
             <div
-              className="absolute bg-gray-900 text-white px-4 py-2 rounded-lg shadow-xl z-10 pointer-events-none"
+              className={tooltipClassName}
               style={{
-                left: 'calc(100% - 60px)',
-                top: '0',
+                ...tooltipStyle,
                 minWidth: '200px'
               }}
             >
@@ -304,28 +338,22 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
                 <div className="text-gray-400 mt-1">Sin diputado electo</div>
               </div>
               {/* Flecha del tooltip */}
-              <div
-                className="absolute -left-2 top-1/2 transform -translate-y-1/2"
-                style={{
-                  width: 0,
-                  height: 0,
-                  borderTop: '8px solid transparent',
-                  borderBottom: '8px solid transparent',
-                  borderRight: '8px solid #111827'
-                }}
-              />
+              <div className="absolute" style={arrowStyle} />
             </div>
           )
         }
 
+        const candidateTooltipClassName = isBottomPosition
+          ? "absolute left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-4 py-3 rounded-lg shadow-xl z-10 pointer-events-none"
+          : "absolute bg-gray-900 text-white px-4 py-3 rounded-lg shadow-xl z-10 pointer-events-none"
+
         // Tooltip para escaños con candidato
         return candidateInfo && (
           <div
-            className="absolute bg-gray-900 text-white px-4 py-3 rounded-lg shadow-xl z-10 pointer-events-none"
+            className={candidateTooltipClassName}
             style={{
-              left: 'calc(100% - 60px)',
-              top: '0',
-              minWidth: '280px'
+              ...tooltipStyle,
+              minWidth: isBottomPosition ? '320px' : '280px'
             }}
           >
             <div className="flex items-start gap-3">
@@ -367,16 +395,7 @@ const Hemiciclo = ({ candidatosElectos, getPactoColor, getPartidoNombre, totalEs
               </div>
             </div>
             {/* Flecha del tooltip */}
-            <div
-              className="absolute -left-2 top-1/2 transform -translate-y-1/2"
-              style={{
-                width: 0,
-                height: 0,
-                borderTop: '8px solid transparent',
-                borderBottom: '8px solid transparent',
-                borderRight: '8px solid #111827'
-              }}
-            />
+            <div className="absolute" style={arrowStyle} />
           </div>
         )
       })()}
