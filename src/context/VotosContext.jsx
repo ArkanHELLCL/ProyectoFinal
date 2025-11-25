@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import SessionExpiredModal from '../components/SessionExpiredModal'
 
 const VotosContext = createContext()
 
@@ -96,6 +97,9 @@ export const VotosProvider = ({ children }) => {
   // Estado de carga de distritos - inicializar desde localStorage
   const [distritosEstado, setDistritosEstado] = useState(() => cargarDesdeLocalStorage(CACHE_STATE_KEY))
 
+  // Estado para el modal de sesión expirada
+  const [showSessionModal, setShowSessionModal] = useState(false)
+
   // Guardar tipoVotos en localStorage cuando cambie
   useEffect(() => {
     try {
@@ -170,9 +174,36 @@ export const VotosProvider = ({ children }) => {
         url += '&pacto_ficticio=toda_derecha'
       }
 
-      const response = await fetch(url)
+      const token = localStorage.getItem('session_token')
+      
+      if (!token) {
+        // No hay token, mostrar modal de sesión expirada
+        console.error('No hay token de sesión, mostrando modal...')
+        localStorage.removeItem('isAuthenticated')
+        localStorage.removeItem('userData')
+        setShowSessionModal(true)
+        throw new Error('No autorizado')
+      }
+      
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.status === 401) {
+        // Sesión expirada o no autorizado - mostrar modal
+        console.error('Sesión no autorizada (401), mostrando modal...')
+        localStorage.removeItem('session_token')
+        localStorage.removeItem('isAuthenticated')
+        localStorage.removeItem('userData')
+        setShowSessionModal(true)
+        throw new Error('No autorizado')
+      }
+      
       if (!response.ok) {
-        throw new Error(`Error al cargar distrito ${distrito}`)
+        throw new Error(`Error al cargar distrito ${distrito}: ${response.status}`)
       }
 
       const data = await response.json()
@@ -348,6 +379,10 @@ export const VotosProvider = ({ children }) => {
       getDistritosCargadosPorCalculo,
       limpiarCache
     }}>
+      <SessionExpiredModal 
+        isOpen={showSessionModal} 
+        onClose={() => setShowSessionModal(false)} 
+      />
       {children}
     </VotosContext.Provider>
   )

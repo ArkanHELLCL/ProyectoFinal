@@ -323,7 +323,12 @@ function Distritos() {
 
       // Obtener información de escaños del distrito
       try {
-        const escanosResponse = await fetch(`${API_BASE_URL}/api/escanos/${distrito}`)
+        const token = localStorage.getItem('session_token')
+        const escanosResponse = await fetch(`${API_BASE_URL}/api/escanos/${distrito}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
         if (escanosResponse.ok) {
           const escanosData = await escanosResponse.json()
           // La API ahora devuelve solo el número de escaños
