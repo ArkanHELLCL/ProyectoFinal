@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import nombresDistritos from '../../mock/nombresDistritos.json'
 import { useVotos } from '../context/VotosContext'
+import UserMenu from '../components/UserMenu'
 
 // URL base de la API según el entorno
 const API_BASE_URL = import.meta.env.VITE_API_URL || ''
@@ -402,9 +403,23 @@ function ComparativaDistritos() {
             <p>Seleccione un distrito para ver la información</p>
           </div>
         ) : loadingVotos ? (
-          <div className="text-center py-12">
-            <div className={`animate-spin rounded-full h-16 w-16 border-b-2 ${colorTema === 'purple' ? 'border-purple-600' : 'border-blue-600'} mx-auto`}></div>
-            <p className="mt-4 text-gray-600">Cargando datos...</p>
+          <div className="flex items-center justify-center py-12">
+            <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">Cargando Datos</h3>
+              
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-gray-700">Distrito {selectedDistrito}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                  <div className={`h-full rounded-full animate-pulse ${colorTema === 'purple' ? 'bg-purple-600' : 'bg-blue-600'}`}></div>
+                </div>
+              </div>
+              
+              <div className="text-center text-gray-500 text-sm">
+                Cargando datos comparativos...
+              </div>
+            </div>
           </div>
         ) : (
           <>
@@ -915,10 +930,19 @@ function ComparativaDistritos() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando datos...</p>
+      <div className="min-h-screen bg-linear-to-br from-purple-50 via-blue-50 to-indigo-100 flex items-center justify-center py-8 px-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Cargando Página</h2>
+          
+          <div className="mb-6">
+            <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+              <div className="bg-indigo-600 h-full rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          
+          <div className="text-center text-gray-500 text-sm">
+            Preparando vista comparativa...
+          </div>
         </div>
       </div>
     )
@@ -940,6 +964,9 @@ function ComparativaDistritos() {
   return (
     <div className="min-h-screen bg-linear-to-br from-purple-50 via-blue-50 to-indigo-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
+        <div className="flex justify-end mb-4">
+          <UserMenu />
+        </div>
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
             <Link

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Hemiciclo from '../components/Hemiciclo'
 import { useVotos } from '../context/VotosContext'
+import UserMenu from '../components/UserMenu'
 
 const PARTIDO_NOMBRES = {
   PS: "Partido Socialista",
@@ -38,6 +39,10 @@ const ComparativaPactosFicticiosHemiciclo = () => {
   
   const [candidatosLista1, setCandidatosLista1] = useState([])
   const [candidatosLista2, setCandidatosLista2] = useState([])
+  const [todosCandidatosLista1, setTodosCandidatosLista1] = useState([])
+  const [todosCandidatosLista2, setTodosCandidatosLista2] = useState([])
+  const [totalVotosValidosLista1, setTotalVotosValidosLista1] = useState(0)
+  const [totalVotosValidosLista2, setTotalVotosValidosLista2] = useState(0)
   const [loading, setLoading] = useState(true)
   const [progresoLista1, setProgresoLista1] = useState(0)
   const [progresoLista2, setProgresoLista2] = useState(0)
@@ -182,11 +187,15 @@ const ComparativaPactosFicticiosHemiciclo = () => {
                 setProgresoLista1((completadosLista1Ref.current / totalDistritos) * 100)
               }
               
-              return data?.candidatos_electos || []
+              return { 
+                electos: data?.candidatos_electos || [], 
+                todos: data?.candidatos || [],
+                votosValidos: data?.votos_totales_reales || 0 
+              }
             } catch {
               completadosLista1Ref.current++
               setProgresoLista1((completadosLista1Ref.current / totalDistritos) * 100)
-              return []
+              return { electos: [], todos: [], votosValidos: 0 }
             }
           })()
         )
@@ -202,11 +211,15 @@ const ComparativaPactosFicticiosHemiciclo = () => {
                 setProgresoLista2((completadosLista2Ref.current / totalDistritos) * 100)
               }
               
-              return data?.candidatos_electos || []
+              return { 
+                electos: data?.candidatos_electos || [], 
+                todos: data?.candidatos || [],
+                votosValidos: data?.votos_totales_reales || 0 
+              }
             } catch {
               completadosLista2Ref.current++
               setProgresoLista2((completadosLista2Ref.current / totalDistritos) * 100)
-              return []
+              return { electos: [], todos: [], votosValidos: 0 }
             }
           })()
         )
@@ -222,17 +235,29 @@ const ComparativaPactosFicticiosHemiciclo = () => {
       
       const todosElectosLista1 = []
       const todosElectosLista2 = []
+      const todosCandidatos1 = []
+      const todosCandidatos2 = []
+      let totalVotosValidosNacional1 = 0
+      let totalVotosValidosNacional2 = 0
       
-      resultadosLista1.forEach(electos => {
-        todosElectosLista1.push(...electos)
+      resultadosLista1.forEach(resultado => {
+        todosElectosLista1.push(...resultado.electos)
+        todosCandidatos1.push(...resultado.todos)
+        totalVotosValidosNacional1 += resultado.votosValidos
       })
       
-      resultadosLista2.forEach(electos => {
-        todosElectosLista2.push(...electos)
+      resultadosLista2.forEach(resultado => {
+        todosElectosLista2.push(...resultado.electos)
+        todosCandidatos2.push(...resultado.todos)
+        totalVotosValidosNacional2 += resultado.votosValidos
       })
 
       setCandidatosLista1(todosElectosLista1)
       setCandidatosLista2(todosElectosLista2)
+      setTodosCandidatosLista1(todosCandidatos1)
+      setTodosCandidatosLista2(todosCandidatos2)
+      setTotalVotosValidosLista1(totalVotosValidosNacional1)
+      setTotalVotosValidosLista2(totalVotosValidosNacional2)
       
       setLoading(false)
     } catch {
@@ -247,10 +272,13 @@ const ComparativaPactosFicticiosHemiciclo = () => {
           <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Cargando Datos Comparativos</h2>
           
           {/* Barra de progreso Lista 1 */}
-          <div className="mb-6">
+          <div className="mb-8 p-4 bg-purple-50 rounded-lg border border-purple-200">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-purple-700">{getTipoCalculoCorto(tipoCalculo1)}</span>
+                <span className="inline-block px-3 py-1 bg-purple-600 text-white text-sm font-semibold rounded-full">
+                  Lista 1
+                </span>
+                <span className="text-sm font-semibold text-purple-900">{getTipoCalculoCorto(tipoCalculo1)}</span>
                 {lista1Completo && (
                   <div className="flex items-center gap-1">
                     <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
@@ -273,10 +301,13 @@ const ComparativaPactosFicticiosHemiciclo = () => {
           </div>
 
           {/* Barra de progreso Lista 2 */}
-          <div className="mb-6">
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-blue-700">{getTipoCalculoCorto(tipoCalculo2)}</span>
+                <span className="inline-block px-3 py-1 bg-blue-600 text-white text-sm font-semibold rounded-full">
+                  Lista 2
+                </span>
+                <span className="text-sm font-semibold text-blue-900">{getTipoCalculoCorto(tipoCalculo2)}</span>
                 {lista2Completo && (
                   <div className="flex items-center gap-1">
                     <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
@@ -309,6 +340,9 @@ const ComparativaPactosFicticiosHemiciclo = () => {
   return (
     <div className="min-h-screen bg-linear-to-br from-purple-50 to-indigo-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
+        <div className="flex justify-end mb-4">
+          <UserMenu />
+        </div>
         {/* Header */}
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
@@ -477,6 +511,100 @@ const ComparativaPactosFicticiosHemiciclo = () => {
           </div>
         </div>
 
+        {/* Estadísticas de Cambios por Partido */}
+        {candidatosLista1.length > 0 && candidatosLista2.length > 0 && (() => {
+          // Calcular escaños por partido en cada lista
+          const escanosPorPartidoLista1 = {}
+          const escanosPorPartidoLista2 = {}
+          
+          candidatosLista1.forEach(c => {
+            escanosPorPartidoLista1[c.partido] = (escanosPorPartidoLista1[c.partido] || 0) + 1
+          })
+          
+          candidatosLista2.forEach(c => {
+            escanosPorPartidoLista2[c.partido] = (escanosPorPartidoLista2[c.partido] || 0) + 1
+          })
+          
+          // Calcular cambios
+          const todosLosPartidos = new Set([...Object.keys(escanosPorPartidoLista1), ...Object.keys(escanosPorPartidoLista2)])
+          const cambios = []
+          
+          todosLosPartidos.forEach(partido => {
+            const escanos1 = escanosPorPartidoLista1[partido] || 0
+            const escanos2 = escanosPorPartidoLista2[partido] || 0
+            const diferencia = escanos2 - escanos1
+            
+            if (diferencia !== 0) {
+              cambios.push({ partido, diferencia, escanos1, escanos2 })
+            }
+          })
+          
+          // Ordenar: primero los que ganaron (mayor a menor), luego los que perdieron (menor a mayor)
+          cambios.sort((a, b) => b.diferencia - a.diferencia)
+          
+          if (cambios.length === 0) return null
+          
+          const ganadores = cambios.filter(c => c.diferencia > 0)
+          const perdedores = cambios.filter(c => c.diferencia < 0)
+          
+          return (
+            <div className="bg-linear-to-br from-indigo-50 to-purple-50 rounded-lg shadow-lg p-6 mb-6 border-2 border-indigo-200">
+              <h3 className="text-xl font-bold text-indigo-900 mb-4 text-center">
+                📊 Cambios en Escaños por Partido
+              </h3>
+              <p className="text-sm text-gray-600 text-center mb-4">
+                Comparando <span className="font-semibold text-purple-700">{getTipoCalculoCorto(tipoCalculo1)}</span> vs <span className="font-semibold text-blue-700">{getTipoCalculoCorto(tipoCalculo2)}</span>
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Ganadores */}
+                {ganadores.length > 0 && (
+                  <div className="bg-white rounded-lg p-4 border-2 border-green-200">
+                    <h4 className="text-lg font-bold text-green-700 mb-3 flex items-center gap-2">
+                      <span>📈</span> Partidos que Ganaron Escaños
+                    </h4>
+                    <div className="space-y-2">
+                      {ganadores.map(({ partido, diferencia, escanos1, escanos2 }) => (
+                        <div key={partido} className="flex items-center justify-between p-2 bg-green-50 rounded">
+                          <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${getPartidoColor(partido)}`}>
+                            {partido}
+                          </span>
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-green-700">+{diferencia}</div>
+                            <div className="text-xs text-gray-500">{escanos1} → {escanos2}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Perdedores */}
+                {perdedores.length > 0 && (
+                  <div className="bg-white rounded-lg p-4 border-2 border-red-200">
+                    <h4 className="text-lg font-bold text-red-700 mb-3 flex items-center gap-2">
+                      <span>📉</span> Partidos que Perdieron Escaños
+                    </h4>
+                    <div className="space-y-2">
+                      {perdedores.map(({ partido, diferencia, escanos1, escanos2 }) => (
+                        <div key={partido} className="flex items-center justify-between p-2 bg-red-50 rounded">
+                          <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${getPartidoColor(partido)}`}>
+                            {partido}
+                          </span>
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-red-700">{diferencia}</div>
+                            <div className="text-xs text-gray-500">{escanos1} → {escanos2}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Control para colorear */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
           <div className="flex items-center justify-center gap-4">
@@ -556,26 +684,37 @@ const ComparativaPactosFicticiosHemiciclo = () => {
           {/* Consolidado Lista 1 */}
           {candidatosLista1.length > 0 && (() => {
             const totalEscanos = candidatosLista1.length
-            const totalVotos = candidatosLista1.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
+            const totalVotosElectos = candidatosLista1.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
+            const totalVotosValidos = totalVotosValidosLista1
             
-            // Consolidado por Pacto
+            // Consolidado por Pacto - USAR TODOS LOS CANDIDATOS
             const consolidadoPacto = {}
-            candidatosLista1.forEach(c => {
+            todosCandidatosLista1.forEach(c => {
               if (!consolidadoPacto[c.pacto]) {
                 consolidadoPacto[c.pacto] = { votos: 0, escanos: 0 }
               }
               consolidadoPacto[c.pacto].votos += c.votos_reales_cantidad || 0
-              consolidadoPacto[c.pacto].escanos += 1
+            })
+            // Contar escaños solo de electos
+            candidatosLista1.forEach(c => {
+              if (consolidadoPacto[c.pacto]) {
+                consolidadoPacto[c.pacto].escanos += 1
+              }
             })
 
-            // Consolidado por Partido
+            // Consolidado por Partido - USAR TODOS LOS CANDIDATOS
             const consolidadoPartido = {}
-            candidatosLista1.forEach(c => {
+            todosCandidatosLista1.forEach(c => {
               if (!consolidadoPartido[c.partido]) {
                 consolidadoPartido[c.partido] = { votos: 0, escanos: 0 }
               }
               consolidadoPartido[c.partido].votos += c.votos_reales_cantidad || 0
-              consolidadoPartido[c.partido].escanos += 1
+            })
+            // Contar escaños solo de electos
+            candidatosLista1.forEach(c => {
+              if (consolidadoPartido[c.partido]) {
+                consolidadoPartido[c.partido].escanos += 1
+              }
             })
 
             return (
@@ -616,15 +755,20 @@ const ComparativaPactosFicticiosHemiciclo = () => {
                               </td>
                               <td className="px-3 py-2 text-right">{data.votos.toLocaleString('es-CL')}</td>
                               <td className="px-3 py-2 text-right text-purple-600">
-                                {totalVotos > 0 ? ((data.votos / totalVotos) * 100).toFixed(2) : '0.00'}%
+                                {totalVotosValidos > 0 ? ((data.votos / totalVotosValidos) * 100).toFixed(2) : '0.00'}%
                               </td>
                             </tr>
                           ))}
                           <tr className="bg-purple-100 font-bold">
-                            <td className="px-3 py-2">TOTAL</td>
+                            <td className="px-3 py-2">TOTAL ELECTOS</td>
                             <td className="px-3 py-2 text-right">{totalEscanos}</td>
                             <td className="px-3 py-2 text-right">100%</td>
-                            <td className="px-3 py-2 text-right">{totalVotos.toLocaleString('es-CL')}</td>
+                            <td className="px-3 py-2 text-right">{totalVotosElectos.toLocaleString('es-CL')}</td>
+                            <td className="px-3 py-2 text-right">{totalVotosValidos > 0 ? ((totalVotosElectos / totalVotosValidos) * 100).toFixed(2) : '0.00'}%</td>
+                          </tr>
+                          <tr className="bg-purple-50 font-semibold text-xs">
+                            <td className="px-3 py-2" colSpan="3">TOTAL VOTOS VÁLIDOS</td>
+                            <td className="px-3 py-2 text-right">{totalVotosValidos.toLocaleString('es-CL')}</td>
                             <td className="px-3 py-2 text-right">100%</td>
                           </tr>
                         </tbody>
@@ -662,15 +806,20 @@ const ComparativaPactosFicticiosHemiciclo = () => {
                               </td>
                               <td className="px-3 py-2 text-right">{data.votos.toLocaleString('es-CL')}</td>
                               <td className="px-3 py-2 text-right text-purple-600">
-                                {totalVotos > 0 ? ((data.votos / totalVotos) * 100).toFixed(2) : '0.00'}%
+                                {totalVotosValidos > 0 ? ((data.votos / totalVotosValidos) * 100).toFixed(2) : '0.00'}%
                               </td>
                             </tr>
                           ))}
                           <tr className="bg-purple-100 font-bold">
-                            <td className="px-3 py-2">TOTAL</td>
+                            <td className="px-3 py-2">TOTAL ELECTOS</td>
                             <td className="px-3 py-2 text-right">{totalEscanos}</td>
                             <td className="px-3 py-2 text-right">100%</td>
-                            <td className="px-3 py-2 text-right">{totalVotos.toLocaleString('es-CL')}</td>
+                            <td className="px-3 py-2 text-right">{totalVotosElectos.toLocaleString('es-CL')}</td>
+                            <td className="px-3 py-2 text-right">{totalVotosValidos > 0 ? ((totalVotosElectos / totalVotosValidos) * 100).toFixed(2) : '0.00'}%</td>
+                          </tr>
+                          <tr className="bg-purple-50 font-semibold text-xs">
+                            <td className="px-3 py-2" colSpan="3">TOTAL VOTOS VÁLIDOS</td>
+                            <td className="px-3 py-2 text-right">{totalVotosValidos.toLocaleString('es-CL')}</td>
                             <td className="px-3 py-2 text-right">100%</td>
                           </tr>
                         </tbody>
@@ -685,26 +834,37 @@ const ComparativaPactosFicticiosHemiciclo = () => {
           {/* Consolidado Lista 2 */}
           {candidatosLista2.length > 0 && (() => {
             const totalEscanos = candidatosLista2.length
-            const totalVotos = candidatosLista2.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
+            const totalVotosElectos = candidatosLista2.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
+            const totalVotosValidos = totalVotosValidosLista2
             
-            // Consolidado por Pacto
+            // Consolidado por Pacto - USAR TODOS LOS CANDIDATOS
             const consolidadoPacto = {}
-            candidatosLista2.forEach(c => {
+            todosCandidatosLista2.forEach(c => {
               if (!consolidadoPacto[c.pacto]) {
                 consolidadoPacto[c.pacto] = { votos: 0, escanos: 0 }
               }
               consolidadoPacto[c.pacto].votos += c.votos_reales_cantidad || 0
-              consolidadoPacto[c.pacto].escanos += 1
+            })
+            // Contar escaños solo de electos
+            candidatosLista2.forEach(c => {
+              if (consolidadoPacto[c.pacto]) {
+                consolidadoPacto[c.pacto].escanos += 1
+              }
             })
 
-            // Consolidado por Partido
+            // Consolidado por Partido - USAR TODOS LOS CANDIDATOS
             const consolidadoPartido = {}
-            candidatosLista2.forEach(c => {
+            todosCandidatosLista2.forEach(c => {
               if (!consolidadoPartido[c.partido]) {
                 consolidadoPartido[c.partido] = { votos: 0, escanos: 0 }
               }
               consolidadoPartido[c.partido].votos += c.votos_reales_cantidad || 0
-              consolidadoPartido[c.partido].escanos += 1
+            })
+            // Contar escaños solo de electos
+            candidatosLista2.forEach(c => {
+              if (consolidadoPartido[c.partido]) {
+                consolidadoPartido[c.partido].escanos += 1
+              }
             })
 
             return (
@@ -745,15 +905,20 @@ const ComparativaPactosFicticiosHemiciclo = () => {
                               </td>
                               <td className="px-3 py-2 text-right">{data.votos.toLocaleString('es-CL')}</td>
                               <td className="px-3 py-2 text-right text-blue-600">
-                                {totalVotos > 0 ? ((data.votos / totalVotos) * 100).toFixed(2) : '0.00'}%
+                                {totalVotosValidos > 0 ? ((data.votos / totalVotosValidos) * 100).toFixed(2) : '0.00'}%
                               </td>
                             </tr>
                           ))}
                           <tr className="bg-blue-100 font-bold">
-                            <td className="px-3 py-2">TOTAL</td>
+                            <td className="px-3 py-2">TOTAL ELECTOS</td>
                             <td className="px-3 py-2 text-right">{totalEscanos}</td>
                             <td className="px-3 py-2 text-right">100%</td>
-                            <td className="px-3 py-2 text-right">{totalVotos.toLocaleString('es-CL')}</td>
+                            <td className="px-3 py-2 text-right">{totalVotosElectos.toLocaleString('es-CL')}</td>
+                            <td className="px-3 py-2 text-right">{totalVotosValidos > 0 ? ((totalVotosElectos / totalVotosValidos) * 100).toFixed(2) : '0.00'}%</td>
+                          </tr>
+                          <tr className="bg-blue-50 font-semibold text-xs">
+                            <td className="px-3 py-2" colSpan="3">TOTAL VOTOS VÁLIDOS</td>
+                            <td className="px-3 py-2 text-right">{totalVotosValidos.toLocaleString('es-CL')}</td>
                             <td className="px-3 py-2 text-right">100%</td>
                           </tr>
                         </tbody>
@@ -791,15 +956,20 @@ const ComparativaPactosFicticiosHemiciclo = () => {
                               </td>
                               <td className="px-3 py-2 text-right">{data.votos.toLocaleString('es-CL')}</td>
                               <td className="px-3 py-2 text-right text-blue-600">
-                                {totalVotos > 0 ? ((data.votos / totalVotos) * 100).toFixed(2) : '0.00'}%
+                                {totalVotosValidos > 0 ? ((data.votos / totalVotosValidos) * 100).toFixed(2) : '0.00'}%
                               </td>
                             </tr>
                           ))}
                           <tr className="bg-blue-100 font-bold">
-                            <td className="px-3 py-2">TOTAL</td>
+                            <td className="px-3 py-2">TOTAL ELECTOS</td>
                             <td className="px-3 py-2 text-right">{totalEscanos}</td>
                             <td className="px-3 py-2 text-right">100%</td>
-                            <td className="px-3 py-2 text-right">{totalVotos.toLocaleString('es-CL')}</td>
+                            <td className="px-3 py-2 text-right">{totalVotosElectos.toLocaleString('es-CL')}</td>
+                            <td className="px-3 py-2 text-right">{totalVotosValidos > 0 ? ((totalVotosElectos / totalVotosValidos) * 100).toFixed(2) : '0.00'}%</td>
+                          </tr>
+                          <tr className="bg-blue-50 font-semibold text-xs">
+                            <td className="px-3 py-2" colSpan="3">TOTAL VOTOS VÁLIDOS</td>
+                            <td className="px-3 py-2 text-right">{totalVotosValidos.toLocaleString('es-CL')}</td>
                             <td className="px-3 py-2 text-right">100%</td>
                           </tr>
                         </tbody>

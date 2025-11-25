@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import nombresDistritos from '../../mock/nombresDistritos.json'
 import { useVotos } from '../context/VotosContext'
+import UserMenu from '../components/UserMenu'
 
 // URL base de la API según el entorno
 const API_BASE_URL = import.meta.env.VITE_API_URL || ''
@@ -354,10 +355,24 @@ function Distritos() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando datos...</p>
+      <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-8 px-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Cargando Datos del Distrito</h2>
+          
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-blue-700">Distrito {selectedDistrito || ''}</span>
+              </div>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+              <div className="bg-blue-600 h-full rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          
+          <div className="text-center text-gray-500 text-sm">
+            Cargando datos del distrito...
+          </div>
         </div>
       </div>
     )
@@ -379,6 +394,9 @@ function Distritos() {
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
+        <div className="flex justify-end mb-4">
+          <UserMenu />
+        </div>
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
             <Link

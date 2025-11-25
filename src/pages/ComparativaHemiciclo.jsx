@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import Hemiciclo from '../components/Hemiciclo'
 import { useVotos } from '../context/VotosContext'
+import UserMenu from '../components/UserMenu'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
@@ -447,6 +448,9 @@ const ComparativaHemiciclo = () => {
   return (
     <div className="min-h-screen bg-linear-to-br from-purple-50 to-indigo-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
+        <div className="flex justify-end mb-4">
+          <UserMenu />
+        </div>
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
             <Link

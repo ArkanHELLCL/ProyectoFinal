@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import nombresDistritos from '../../mock/nombresDistritos.json'
 import { useVotos } from '../context/VotosContext'
+import UserMenu from '../components/UserMenu'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
@@ -100,7 +101,7 @@ const ComparativaPactosFicticiosDistritos = () => {
 
   const getTipoCalculoCorto = (tipo) => {
     const nombres = {
-      normal: "Normal",
+      normal: "Pactos Reales",
       derecha: "JK Unido",
       izquierda: "AH Unido"
     }
@@ -404,6 +405,9 @@ const ComparativaPactosFicticiosDistritos = () => {
   return (
     <div className="min-h-screen bg-linear-to-br from-purple-50 via-blue-50 to-indigo-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
+        <div className="flex justify-end mb-4">
+          <UserMenu />
+        </div>
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
             <Link
@@ -472,6 +476,100 @@ const ComparativaPactosFicticiosDistritos = () => {
             ))}
           </select>
         </div>
+
+        {/* Estadísticas de Cambios por Partido */}
+        {selectedDistrito && !loadingVotos && candidatosElectosLista1.length > 0 && candidatosElectosLista2.length > 0 && (() => {
+          // Calcular escaños por partido en cada lista
+          const escanosPorPartidoLista1 = {}
+          const escanosPorPartidoLista2 = {}
+          
+          candidatosElectosLista1.forEach(c => {
+            escanosPorPartidoLista1[c.partido] = (escanosPorPartidoLista1[c.partido] || 0) + 1
+          })
+          
+          candidatosElectosLista2.forEach(c => {
+            escanosPorPartidoLista2[c.partido] = (escanosPorPartidoLista2[c.partido] || 0) + 1
+          })
+          
+          // Calcular cambios
+          const todosLosPartidos = new Set([...Object.keys(escanosPorPartidoLista1), ...Object.keys(escanosPorPartidoLista2)])
+          const cambios = []
+          
+          todosLosPartidos.forEach(partido => {
+            const escanos1 = escanosPorPartidoLista1[partido] || 0
+            const escanos2 = escanosPorPartidoLista2[partido] || 0
+            const diferencia = escanos2 - escanos1
+            
+            if (diferencia !== 0) {
+              cambios.push({ partido, diferencia, escanos1, escanos2 })
+            }
+          })
+          
+          // Ordenar: primero los que ganaron (mayor a menor), luego los que perdieron (menor a mayor)
+          cambios.sort((a, b) => b.diferencia - a.diferencia)
+          
+          if (cambios.length === 0) return null
+          
+          const ganadores = cambios.filter(c => c.diferencia > 0)
+          const perdedores = cambios.filter(c => c.diferencia < 0)
+          
+          return (
+            <div className="bg-linear-to-br from-indigo-50 to-purple-50 rounded-lg shadow-lg p-6 mb-6 border-2 border-indigo-200">
+              <h3 className="text-xl font-bold text-indigo-900 mb-4 text-center">
+                📊 Cambios en Escaños por Partido - Distrito {selectedDistrito}
+              </h3>
+              <p className="text-sm text-gray-600 text-center mb-4">
+                Comparando <span className="font-semibold text-purple-700">{getTipoCalculoCorto(tipoCalculo1)}</span> vs <span className="font-semibold text-blue-700">{getTipoCalculoCorto(tipoCalculo2)}</span>
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Ganadores */}
+                {ganadores.length > 0 && (
+                  <div className="bg-white rounded-lg p-4 border-2 border-green-200">
+                    <h4 className="text-lg font-bold text-green-700 mb-3 flex items-center gap-2">
+                      <span>📈</span> Partidos que Ganaron Escaños
+                    </h4>
+                    <div className="space-y-2">
+                      {ganadores.map(({ partido, diferencia, escanos1, escanos2 }) => (
+                        <div key={partido} className="flex items-center justify-between p-2 bg-green-50 rounded">
+                          <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${getPartidoColor(partido)}`}>
+                            {partido}
+                          </span>
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-green-700">+{diferencia}</div>
+                            <div className="text-xs text-gray-500">{escanos1} → {escanos2}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Perdedores */}
+                {perdedores.length > 0 && (
+                  <div className="bg-white rounded-lg p-4 border-2 border-red-200">
+                    <h4 className="text-lg font-bold text-red-700 mb-3 flex items-center gap-2">
+                      <span>📉</span> Partidos que Perdieron Escaños
+                    </h4>
+                    <div className="space-y-2">
+                      {perdedores.map(({ partido, diferencia, escanos1, escanos2 }) => (
+                        <div key={partido} className="flex items-center justify-between p-2 bg-red-50 rounded">
+                          <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${getPartidoColor(partido)}`}>
+                            {partido}
+                          </span>
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-red-700">{diferencia}</div>
+                            <div className="text-xs text-gray-500">{escanos1} → {escanos2}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
 
         {selectedDistrito && !loadingVotos && (
           <>
@@ -659,28 +757,38 @@ const ComparativaPactosFicticiosDistritos = () => {
                 )}
 
                 {/* Consolidado Lista 1 */}
-                {candidatosElectosLista1.length > 0 && selectedDistrito && (() => {
-                  const totalVotosDistrito = datosDistrito?.votos_validos || 0
+                {candidatosElectosLista1.length > 0 && selectedDistrito && votosAcumuladosLista1.length > 0 && (() => {
+                  const totalVotosDistrito = datosDistrito?.votos_totales_reales || 0
                   const totalEscanos = candidatosElectosLista1.length
                   
-                  // Consolidado por Pacto
+                  // Consolidado por Pacto - USAR votosAcumuladosLista1 que ya tiene los votos totales
                   const consolidadoPacto = {}
-                  candidatosElectosLista1.forEach(c => {
-                    if (!consolidadoPacto[c.pacto]) {
-                      consolidadoPacto[c.pacto] = { votos: 0, escanos: 0 }
+                  votosAcumuladosLista1.forEach(pacto => {
+                    consolidadoPacto[pacto.codigo] = { 
+                      votos: pacto.votos,
+                      escanos: 0 
                     }
-                    consolidadoPacto[c.pacto].votos += c.votos_reales_cantidad || 0
-                    consolidadoPacto[c.pacto].escanos += 1
+                  })
+                  // Contar escaños solo de electos
+                  candidatosElectosLista1.forEach(c => {
+                    if (consolidadoPacto[c.pacto]) {
+                      consolidadoPacto[c.pacto].escanos += 1
+                    }
                   })
 
-                  // Consolidado por Partido
+                  // Consolidado por Partido - USAR partidosAcumuladosLista1 que ya tiene los votos totales
                   const consolidadoPartido = {}
-                  candidatosElectosLista1.forEach(c => {
-                    if (!consolidadoPartido[c.partido]) {
-                      consolidadoPartido[c.partido] = { votos: 0, escanos: 0 }
+                  partidosAcumuladosLista1.forEach(partido => {
+                    consolidadoPartido[partido.codigo] = { 
+                      votos: partido.votos,
+                      escanos: 0 
                     }
-                    consolidadoPartido[c.partido].votos += c.votos_reales_cantidad || 0
-                    consolidadoPartido[c.partido].escanos += 1
+                  })
+                  // Contar escaños solo de electos
+                  candidatosElectosLista1.forEach(c => {
+                    if (consolidadoPartido[c.partido]) {
+                      consolidadoPartido[c.partido].escanos += 1
+                    }
                   })
 
                   const totalVotosElectos = candidatosElectosLista1.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
@@ -868,28 +976,38 @@ const ComparativaPactosFicticiosDistritos = () => {
                 )}
 
                 {/* Consolidado Lista 2 */}
-                {candidatosElectosLista2.length > 0 && selectedDistrito && (() => {
-                  const totalVotosDistrito = datosDistrito?.votos_validos || 0
+                {candidatosElectosLista2.length > 0 && selectedDistrito && votosAcumuladosLista2.length > 0 && (() => {
+                  const totalVotosDistrito = datosDistrito?.votos_totales_reales || 0
                   const totalEscanos = candidatosElectosLista2.length
                   
-                  // Consolidado por Pacto
+                  // Consolidado por Pacto - USAR votosAcumuladosLista2 que ya tiene los votos totales
                   const consolidadoPacto = {}
-                  candidatosElectosLista2.forEach(c => {
-                    if (!consolidadoPacto[c.pacto]) {
-                      consolidadoPacto[c.pacto] = { votos: 0, escanos: 0 }
+                  votosAcumuladosLista2.forEach(pacto => {
+                    consolidadoPacto[pacto.codigo] = { 
+                      votos: pacto.votos,
+                      escanos: 0 
                     }
-                    consolidadoPacto[c.pacto].votos += c.votos_reales_cantidad || 0
-                    consolidadoPacto[c.pacto].escanos += 1
+                  })
+                  // Contar escaños solo de electos
+                  candidatosElectosLista2.forEach(c => {
+                    if (consolidadoPacto[c.pacto]) {
+                      consolidadoPacto[c.pacto].escanos += 1
+                    }
                   })
 
-                  // Consolidado por Partido
+                  // Consolidado por Partido - USAR partidosAcumuladosLista2 que ya tiene los votos totales
                   const consolidadoPartido = {}
-                  candidatosElectosLista2.forEach(c => {
-                    if (!consolidadoPartido[c.partido]) {
-                      consolidadoPartido[c.partido] = { votos: 0, escanos: 0 }
+                  partidosAcumuladosLista2.forEach(partido => {
+                    consolidadoPartido[partido.codigo] = { 
+                      votos: partido.votos,
+                      escanos: 0 
                     }
-                    consolidadoPartido[c.partido].votos += c.votos_reales_cantidad || 0
-                    consolidadoPartido[c.partido].escanos += 1
+                  })
+                  // Contar escaños solo de electos
+                  candidatosElectosLista2.forEach(c => {
+                    if (consolidadoPartido[c.partido]) {
+                      consolidadoPartido[c.partido].escanos += 1
+                    }
                   })
 
                   const totalVotosElectos = candidatosElectosLista2.reduce((sum, c) => sum + (c.votos_reales_cantidad || 0), 0)
@@ -1014,9 +1132,19 @@ const ComparativaPactosFicticiosDistritos = () => {
         )}
 
         {loadingVotos && (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Cargando datos del distrito...</p>
+          <div className="flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+              <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">Cargando Datos Comparativos</h3>
+              <p className="text-center text-gray-600 mb-6">Distrito {selectedDistrito}</p>
+              
+              <div className="flex justify-center mb-4">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600"></div>
+              </div>
+              
+              <div className="text-center text-gray-500 text-sm">
+                Cargando datos del distrito...
+              </div>
+            </div>
           </div>
         )}
       </div>
