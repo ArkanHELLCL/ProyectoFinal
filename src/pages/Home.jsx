@@ -5,9 +5,24 @@ import { useVotos } from '../context/VotosContext'
 const Home = () => {
   const { tipoVotos, setTipoVotos, modoComparativa, setModoComparativa, tipoCalculo, setTipoCalculo, limpiarCache, getDistritosCargadosPorTipo, getDistritosCargadosPorCalculo } = useVotos()
 
-  // Estados para los filtros de comparativa de pactos ficticios
-  const [tipoCalculo1, setTipoCalculo1] = React.useState('normal')
-  const [tipoCalculo2, setTipoCalculo2] = React.useState('derecha')
+  // Estados para los filtros de comparativa de pactos ficticios (persistentes)
+  const [tipoCalculo1, setTipoCalculo1] = React.useState(() => {
+    const saved = localStorage.getItem('tipoCalculo1')
+    return saved || 'normal'
+  })
+  const [tipoCalculo2, setTipoCalculo2] = React.useState(() => {
+    const saved = localStorage.getItem('tipoCalculo2')
+    return saved || 'derecha'
+  })
+
+  // Guardar en localStorage cuando cambien los valores
+  React.useEffect(() => {
+    localStorage.setItem('tipoCalculo1', tipoCalculo1)
+  }, [tipoCalculo1])
+
+  React.useEffect(() => {
+    localStorage.setItem('tipoCalculo2', tipoCalculo2)
+  }, [tipoCalculo2])
 
   const conteoPorTipo = getDistritosCargadosPorTipo()
   const conteoPorCalculoReales = getDistritosCargadosPorCalculo('reales')
