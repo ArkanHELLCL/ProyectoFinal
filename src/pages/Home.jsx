@@ -5,6 +5,10 @@ import { useVotos } from '../context/VotosContext'
 const Home = () => {
   const { tipoVotos, setTipoVotos, modoComparativa, setModoComparativa, tipoCalculo, setTipoCalculo, limpiarCache, getDistritosCargadosPorTipo, getDistritosCargadosPorCalculo } = useVotos()
 
+  // Estados para los filtros de comparativa de pactos ficticios
+  const [tipoCalculo1, setTipoCalculo1] = React.useState('normal')
+  const [tipoCalculo2, setTipoCalculo2] = React.useState('derecha')
+
   const conteoPorTipo = getDistritosCargadosPorTipo()
   const conteoPorCalculoReales = getDistritosCargadosPorCalculo('reales')
   const conteoPorCalculoEncuesta = getDistritosCargadosPorCalculo('encuesta')
@@ -141,21 +145,24 @@ const Home = () => {
         <div className="grid md:grid-cols-2 gap-6">
           {/* Tarjeta para Análisis de Distritos */}
           <Link
-            to="/distritos"
+            to={modoComparativa ? '/comparativa-distritos' : '/distritos'}
             className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <div className="flex flex-col items-center text-center">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-10 h-10 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+              <div className={`w-20 h-20 ${modoComparativa ? 'bg-purple-100' : 'bg-blue-100'} rounded-full flex items-center justify-center mb-4`}>
+                <svg className={`w-10 h-10 ${modoComparativa ? 'text-purple-600' : 'text-blue-600'}`} fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd"/>
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-gray-800 mb-2">Análisis por Distrito</h2>
               <p className="text-gray-600 mb-4">
-                Visualiza candidatos, votos acumulados y composición del hemiciclo por distrito
+                {modoComparativa
+                  ? 'Comparación lado a lado de encuesta vs reales por distrito electoral'
+                  : 'Visualiza candidatos, votos acumulados y composición del hemiciclo por distrito'
+                }
               </p>
-              <div className="flex items-center text-blue-600 font-semibold">
-                <span>Explorar distritos</span>
+              <div className={`flex items-center ${modoComparativa ? 'text-purple-600' : 'text-blue-600'} font-semibold`}>
+                <span>{modoComparativa ? 'Ver comparativa' : 'Explorar distritos'}</span>
                 <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -191,8 +198,152 @@ const Home = () => {
           </Link>
         </div>
 
+        {/* Línea divisoria */}
+        <div className="mt-12 mb-8 max-w-md mx-auto">
+          <div className="border-t border-gray-200"></div>
+        </div>
+
+        {/* Subtítulo informativo */}
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-700 mb-2">Comparativa de pactos ficticios</h2>
+          <p className="text-gray-600 text-sm">Los pactos JK (Toda la Derecha) y AH (Toda la Izquierda) son agrupaciones ficticias creadas para análisis comparativo</p>
+        </div>
+
+        {/* Filtros de tipo de cálculo para comparativas */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+            {/* Selector 1 */}
+            <div className="flex flex-col items-center gap-2 w-full md:w-auto">
+              <span className="text-sm font-medium text-gray-700">Lista 1 - Tipo de cálculo:</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setTipoCalculo1('normal')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    tipoCalculo1 === 'normal'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Normal
+                </button>
+                <button
+                  onClick={() => setTipoCalculo1('derecha')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    tipoCalculo1 === 'derecha'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Derecha (J+K)
+                </button>
+                <button
+                  onClick={() => setTipoCalculo1('izquierda')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    tipoCalculo1 === 'izquierda'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Izquierda (A-H)
+                </button>
+              </div>
+            </div>
+
+            <div className="hidden md:block h-12 w-px bg-gray-300"></div>
+            <div className="md:hidden w-full h-px bg-gray-300"></div>
+
+            {/* Selector 2 */}
+            <div className="flex flex-col items-center gap-2 w-full md:w-auto">
+              <span className="text-sm font-medium text-gray-700">Lista 2 - Tipo de cálculo:</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setTipoCalculo2('normal')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    tipoCalculo2 === 'normal'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Normal
+                </button>
+                <button
+                  onClick={() => setTipoCalculo2('derecha')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    tipoCalculo2 === 'derecha'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Derecha (J+K)
+                </button>
+                <button
+                  onClick={() => setTipoCalculo2('izquierda')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    tipoCalculo2 === 'izquierda'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Izquierda (A-H)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Opciones de comparativa con pactos ficticios */}
+        <div className="grid md:grid-cols-2 gap-6 mb-12">
+          {/* Tarjeta para Análisis de Distritos con pactos ficticios */}
+          <Link
+            to={`/comparativa-distritos?calculo1=${tipoCalculo1}&calculo2=${tipoCalculo2}`}
+            className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg shadow-lg p-8 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-orange-200"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-orange-200 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-10 h-10 text-orange-700" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd"/>
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Análisis por Distrito</h2>
+              <p className="text-gray-600 mb-4">
+                Comparación por distrito entre dos tipos de cálculo seleccionados
+              </p>
+              <div className="flex items-center text-orange-700 font-semibold">
+                <span>Ver comparativa distritos</span>
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </Link>
+
+          {/* Tarjeta para Hemiciclo con pactos ficticios */}
+          <Link
+            to={`/comparativa?calculo1=${tipoCalculo1}&calculo2=${tipoCalculo2}`}
+            className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-lg shadow-lg p-8 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-rose-200"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-rose-200 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-10 h-10 text-rose-700" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Visualización Hemiciclo</h2>
+              <p className="text-gray-600 mb-4">
+                Comparación de la composición del hemiciclo entre dos tipos de cálculo seleccionados
+              </p>
+              <div className="flex items-center text-rose-700 font-semibold">
+                <span>Ver comparativa hemiciclo</span>
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </Link>
+        </div>
+
         {/* Información adicional */}
-        <div className="mt-12 bg-white rounded-lg shadow-md p-6">
+        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Acerca del Sistema</h3>
           <div className="grid md:grid-cols-3 gap-4 text-center">
             <div>
