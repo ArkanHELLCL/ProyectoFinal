@@ -304,9 +304,8 @@ const HemicicloPage = () => {
 
   // Cargar datos automáticamente al montar el componente o cuando cambien tipoVotos/tipoCalculo
   useEffect(() => {
-    if (candidatosElectos.length === 0 && !loading) {
-      cargarTodosLosElectos()
-    }
+    cargarTodosLosElectos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tipoVotos, tipoCalculo])
 
   return (
